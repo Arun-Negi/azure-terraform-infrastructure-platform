@@ -13,7 +13,7 @@ run "accepts_json_style_inventory_with_optional_networking" {
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.20.0.0/16"]
-          subnets = [
+          subnets       = [
             { name = "snet-web", address_prefixes = ["10.20.1.0/24"] },
             { name = "snet-data", address_prefixes = ["10.20.2.0/24"] }
           ]
