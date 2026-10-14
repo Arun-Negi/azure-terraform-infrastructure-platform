@@ -1,5 +1,5 @@
 output "resource_groups" {
-  description = "Created resource groups keyed by the input map key."
+  description = "Created resource groups keyed by Azure resource group name."
   value = {
     for key, rg in azurerm_resource_group.this : key => {
       id       = rg.id
@@ -10,7 +10,7 @@ output "resource_groups" {
 }
 
 output "virtual_networks" {
-  description = "Created virtual networks keyed by the resource group input key."
+  description = "Created virtual networks keyed by Azure resource group name."
   value = {
     for key, vnet in azurerm_virtual_network.this : key => {
       id   = vnet.id
@@ -20,7 +20,7 @@ output "virtual_networks" {
 }
 
 output "subnets" {
-  description = "Created subnets keyed by resource-group-key/subnet-key."
+  description = "Created subnets keyed by resource-group-name/subnet-name."
   value = {
     for key, subnet in azurerm_subnet.this : key => {
       id   = subnet.id
