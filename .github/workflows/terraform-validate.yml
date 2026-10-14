@@ -5,7 +5,7 @@ on:
     paths:
       - "**/*.tf"
       - "**/*.tftest.hcl"
-      - "**/*.tfvars.example"
+      - "terraform.tfvars.json.example"
       - "policies/**"
       - ".github/workflows/**"
   push:
@@ -13,7 +13,7 @@ on:
     paths:
       - "**/*.tf"
       - "**/*.tftest.hcl"
-      - "**/*.tfvars.example"
+      - "terraform.tfvars.json.example"
       - "policies/**"
       - ".github/workflows/**"
 
@@ -30,13 +30,14 @@ jobs:
           terraform_version: "1.9.8"
       - name: Terraform format
         run: terraform fmt -check -recursive
+      - name: Validate JSON input template and Azure Policy files
+        run: |
+          python -m json.tool terraform.tfvars.json.example > /dev/null
+          python -m json.tool policies/azure-policy/allowed-locations.json > /dev/null
+          python -m json.tool policies/azure-policy/require-managed-by-tag.json > /dev/null
       - name: Initialize without backend
         run: terraform init -backend=false
       - name: Validate configuration
         run: terraform validate
-      - name: Validate Azure Policy JSON syntax
-        run: |
-          python -m json.tool policies/azure-policy/allowed-locations.json > /dev/null
-          python -m json.tool policies/azure-policy/require-managed-by-tag.json > /dev/null
       - name: Run Terraform configuration tests
         run: terraform test
