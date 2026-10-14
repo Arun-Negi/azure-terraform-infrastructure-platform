@@ -1,0 +1,6 @@
+# Copy to backend.hcl (gitignored) and replace the storage account name.
+resource_group_name  = "rg-tfstate-platform"
+storage_account_name = "REPLACE_WITH_UNIQUE_STORAGE_ACCOUNT_NAME"
+container_name       = "tfstate"
+key                  = "platform/dev.tfstate"
+use_oidc              = true
