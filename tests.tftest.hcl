@@ -1,42 +1,33 @@
-# These tests use a mocked AzureRM provider. They validate configuration logic
-# without Azure credentials, creating resources, or incurring cloud costs.
+# Offline tests using a mocked AzureRM provider.
 mock_provider "azurerm" {}
 
-run "accepts_multiple_resource_groups_and_optional_vnet" {
+run "accepts_json_style_inventory_with_optional_networking" {
   command = plan
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    resource_groups = {
-      app = {
-        name     = "rg-app-centralus"
-        location = "centralus"
-        tags     = { managed_by = "terraform", environment = "test" }
+    resource_groups = [
+      {
+        name = "rg-app-centralus"
+        tags = { managed_by = "terraform", environment = "test" }
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.20.0.0/16"]
-          subnets = {
-            web = {
-              name             = "snet-web"
-              address_prefixes = ["10.20.1.0/24"]
-            }
-            data = {
-              name             = "snet-data"
-              address_prefixes = ["10.20.2.0/24"]
-            }
-          }
+          subnets = [
+            { name = "snet-web", address_prefixes = ["10.20.1.0/24"] },
+            { name = "snet-data", address_prefixes = ["10.20.2.0/24"] }
+          ]
         }
+      },
+      {
+        name = "rg-shared-centralus"
       }
-      shared = {
-        name     = "rg-shared-centralus"
-        location = "centralus"
-      }
-    }
+    ]
   }
 
   assert {
     condition     = length(azurerm_resource_group.this) == 2
-    error_message = "Two inventory entries must produce two resource groups."
+    error_message = "Two JSON resource group entries must produce two resource groups."
   }
 
   assert {
@@ -50,31 +41,15 @@ run "accepts_multiple_resource_groups_and_optional_vnet" {
   }
 }
 
-run "rejects_non_centralus_location" {
-  command = plan
-
-  variables {
-    subscription_id = "00000000-0000-0000-0000-000000000000"
-    resource_groups = {
-      invalid = {
-        name     = "rg-invalid"
-        location = "eastus"
-      }
-    }
-  }
-
-  expect_failures = [var.resource_groups]
-}
-
 run "rejects_duplicate_resource_group_names_case_insensitively" {
   command = plan
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    resource_groups = {
-      first  = { name = "rg-duplicate", location = "centralus" }
-      second = { name = "RG-DUPLICATE", location = "centralus" }
-    }
+    resource_groups = [
+      { name = "rg-duplicate" },
+      { name = "RG-DUPLICATE" }
+    ]
   }
 
   expect_failures = [var.resource_groups]
@@ -85,22 +60,18 @@ run "rejects_invalid_subnet_cidr" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    resource_groups = {
-      app = {
-        name     = "rg-app"
-        location = "centralus"
+    resource_groups = [
+      {
+        name = "rg-app"
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.30.0.0/16"]
-          subnets = {
-            bad = {
-              name             = "snet-bad"
-              address_prefixes = ["not-a-cidr"]
-            }
-          }
+          subnets = [
+            { name = "snet-bad", address_prefixes = ["not-a-cidr"] }
+          ]
         }
       }
-    }
+    ]
   }
 
   expect_failures = [var.resource_groups]
