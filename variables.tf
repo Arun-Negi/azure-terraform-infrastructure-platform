@@ -108,5 +108,4 @@ variable "resource_groups" {
     ])
     error_message = "Subnet names must be 1-80 characters and contain only letters, numbers, periods, underscores, or hyphens."
   }
-
 }
