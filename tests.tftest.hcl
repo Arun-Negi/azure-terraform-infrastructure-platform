@@ -6,21 +6,22 @@ run "accepts_json_style_inventory_with_optional_networking" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
+    naming = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       {
-        name            = "rg-app-centralus"
+        instance        = "core"
         tags            = { managed_by = "terraform", environment = "test" }
         virtual_network = {
-          name          = "vnet-app"
+          instance      = "main"
           address_space = ["10.20.0.0/16"]
           subnets       = [
-            { name = "snet-web", address_prefixes = ["10.20.1.0/24"] },
-            { name = "snet-data", address_prefixes = ["10.20.2.0/24"] }
+            { instance = "web", address_prefixes = ["10.20.1.0/24"] },
+            { instance = "data", address_prefixes = ["10.20.2.0/24"] }
           ]
         }
       },
       {
-        name = "rg-shared-centralus"
+        instance = "shared"
       }
     ]
   }
@@ -46,9 +47,10 @@ run "rejects_duplicate_resource_group_names_case_insensitively" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
+    naming = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
-      { name = "rg-duplicate" },
-      { name = "RG-DUPLICATE" }
+      { instance = "duplicate" },
+      { instance = "DUPLICATE" }
     ]
   }
 
@@ -60,14 +62,15 @@ run "rejects_invalid_subnet_cidr" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
+    naming = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       {
-        name            = "rg-app"
+        instance        = "app"
         virtual_network = {
-          name          = "vnet-app"
+          instance      = "main"
           address_space = ["10.30.0.0/16"]
           subnets       = [
-            { name = "snet-bad", address_prefixes = ["not-a-cidr"] }
+            { instance = "bad", address_prefixes = ["not-a-cidr"] }
           ]
         }
       }
