@@ -72,9 +72,14 @@ The repository includes a JSON Schema at `schemas/terraform-input.schema.json` a
 
 The schema catches common input mistakes in the editor, but it cannot validate every Azure rule (such as CIDR overlap, whether a subnet fits inside its VNet, or whether a name already exists in Azure). Terraform validation and the Azure provider remain authoritative.
 
+## Toolchain versions
+
+- **Terraform CLI:** minimum supported version is `1.16.6`; the validation workflow pins `1.16.6` for reproducible CI runs. Use a compatible stable Terraform 1.x release locally.
+- **AzureRM provider:** constrained to the `4.x` major line by `versions.tf`; Terraform selects a compatible provider version during initialization. Commit `.terraform.lock.hcl` for reproducible provider selections when initializing with the supported provider platform(s).
+
 ## Deploy
 
-1. Install Terraform 1.6+ and Azure CLI.
+1. Install Terraform 1.16.6 or a newer compatible stable 1.x release, and Azure CLI.
 2. Authenticate using your approved Azure identity and confirm the target subscription.
 3. Copy and edit the JSON input file as described above.
 4. Run:
