@@ -1,0 +1,41 @@
+{
+  "properties": {
+    "displayName": "Require managed_by tag on platform resource groups and virtual networks",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Denies resource groups and virtual networks that do not include the configured governance tag.",
+    "metadata": {
+      "category": "Tags",
+      "version": "1.0.0"
+    },
+    "parameters": {
+      "tagName": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Required tag name"
+        },
+        "defaultValue": "managed_by"
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "in": [
+              "Microsoft.Resources/subscriptions/resourceGroups",
+              "Microsoft.Network/virtualNetworks"
+            ]
+          },
+          {
+            "field": "[concat('tags[', parameters('tagName'), ']')]",
+            "exists": "false"
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  }
+}
