@@ -1,0 +1,34 @@
+{
+  "subscription_id": "00000000-0000-0000-0000-000000000000",
+  "resource_groups": [
+    {
+      "name": "rg-platform-dev-centralus",
+      "tags": {
+        "environment": "dev",
+        "managed_by": "terraform",
+        "cost_center": "engineering"
+      },
+      "virtual_network": {
+        "name": "vnet-platform-dev",
+        "address_space": ["10.10.0.0/16"],
+        "subnets": [
+          {
+            "name": "snet-app",
+            "address_prefixes": ["10.10.1.0/24"]
+          },
+          {
+            "name": "snet-data",
+            "address_prefixes": ["10.10.2.0/24"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "rg-shared-monitoring-centralus",
+      "tags": {
+        "environment": "shared",
+        "managed_by": "terraform"
+      }
+    }
+  ]
+}
