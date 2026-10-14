@@ -6,7 +6,7 @@ run "accepts_json_style_inventory_with_optional_networking" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming = { org = "acme", app = "platform", env = "dev" }
+    naming       = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       {
         instance        = "core"
@@ -47,7 +47,7 @@ run "rejects_duplicate_resource_group_instances" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming = { org = "acme", app = "platform", env = "dev" }
+    naming       = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       { instance = "duplicate" },
       { instance = "duplicate" }
@@ -62,7 +62,7 @@ run "rejects_invalid_subnet_cidr" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming = { org = "acme", app = "platform", env = "dev" }
+    naming       = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       {
         instance        = "app"
@@ -85,7 +85,7 @@ run "rejects_generated_vnet_name_over_64_characters" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming = { org = "acme", app = "averylongapplicationname", env = "prod" }
+    naming       = { org = "acme", app = "averylongapplicationname", env = "prod" }
     resource_groups = [
       {
         instance = "core"
