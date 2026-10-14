@@ -6,4 +6,5 @@ crash.log
 crash.*.log
 *.auto.tfvars
 terraform.tfvars
+terraform.tfvars.json
 backend.hcl
