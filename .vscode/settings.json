@@ -1,0 +1,11 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "terraform.tfvars.json",
+        "terraform.tfvars.json.example"
+      ],
+      "url": "./schemas/terraform-input.schema.json"
+    }
+  ]
+}
