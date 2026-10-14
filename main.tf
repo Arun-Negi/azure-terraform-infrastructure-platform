@@ -1,21 +1,3 @@
-locals {
-  subnet_entries = flatten([
-    for rg_key, rg in var.resource_groups : [
-      for subnet_key, subnet in rg.virtual_network.subnets : {
-        key              = "${rg_key}/${subnet_key}"
-        rg_key            = rg_key
-        subnet_key        = subnet_key
-        name              = subnet.name
-        address_prefixes  = subnet.address_prefixes
-      }
-    ] if rg.virtual_network != null
-  ])
-
-  subnets = {
-    for subnet in local.subnet_entries : subnet.key => subnet
-  }
-}
-
 resource "azurerm_resource_group" "this" {
   for_each = var.resource_groups
 
