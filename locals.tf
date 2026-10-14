@@ -10,10 +10,10 @@ locals {
   subnet_entries = flatten([
     for rg_key, rg in local.resource_groups : [
       for subnet in try(rg.virtual_network.subnets, []) : {
-        key              = "${rg_key}/${subnet.name}"
+        key               = "${rg_key}/${subnet.name}"
         rg_key            = rg_key
-        name               = subnet.name
-        address_prefixes   = subnet.address_prefixes
+        name              = subnet.name
+        address_prefixes  = subnet.address_prefixes
       }
     ]
   ])
