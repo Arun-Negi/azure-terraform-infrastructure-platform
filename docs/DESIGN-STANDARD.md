@@ -257,7 +257,7 @@ Pin third-party GitHub Actions to reviewed immutable commit SHAs before treating
 - AzureRM 5.x no longer registers resource providers by default. This platform requests `Microsoft.Resources` and `Microsoft.Network`; deployment identities need registration permissions unless registration is managed centrally.
 - Commit `.terraform.lock.hcl` after successful initialization on supported platforms.
 - Commit the Terraform dependency lock file (`.terraform.lock.hcl`) after a successful `terraform init` on supported platforms. Review provider checksum changes as part of dependency upgrades.
-- Upgrade procedure: change the CI pin and Terraform constraint together, initialize to update provider selections if needed, run formatting, validation, tests, and a non-production plan, then verify GitHub Actions before merging. Do not claim the upgrade is complete until CI passes.
+- Upgrade procedure: review the major-version migration guide, update the provider pin and lock file together, initialize with the intended version, run formatting, validation, tests, and a non-production plan, then verify GitHub Actions before merging. Do not claim the upgrade is complete until CI passes.
 
 ## 12. Versioning and change management
 
