@@ -9,16 +9,26 @@ variable "subscription_id" {
   }
 }
 
+variable "naming" {
+  description = "Organization, application, and environment components shared by every generated resource name."
+  type = object({
+    org = string
+    app = string
+    env = string
+  })
+  nullable = false
+}
+
 variable "resource_groups" {
-  description = "Simple JSON list of resource groups. Location is centrally fixed to Central US."
-  type        = list(object({
-    name            = string
-    tags            = optional(map(string), {})
+  description = "Resource groups and optional networking. Resource names are generated from naming.org, naming.app, naming.env, type code, and each resource's instance."
+  type = list(object({
+    instance = string
+    tags     = optional(map(string), {})
     virtual_network = optional(object({
-      name          = string
+      instance      = string
       address_space = list(string)
-      subnets       = optional(list(object({
-        name             = string
+      subnets = optional(list(object({
+        instance         = string
         address_prefixes = list(string)
       })), [])
     }), null)
@@ -33,40 +43,39 @@ variable "resource_groups" {
   validation {
     condition = alltrue([
       for rg in var.resource_groups :
-      length(rg.name) >= 1 &&
-      length(rg.name) <= 90 &&
-      can(regex("^[A-Za-z0-9_().-]+$", rg.name)) &&
-      !endswith(rg.name, ".")
+      length(rg.instance) >= 1 &&
+      length(rg.instance) <= 40 &&
+      can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", rg.instance))
     ])
-    error_message = "Resource group names must be 1-90 characters, use only letters, numbers, underscore, parentheses, hyphen or period, and must not end with a period."
+    error_message = "Resource-group instance values must be 1-40 lowercase letters or digits, optionally separated by single hyphens."
   }
 
   validation {
     condition = length(distinct([
-      for rg in var.resource_groups : lower(rg.name)
+      for rg in var.resource_groups : lower(rg.instance)
     ])) == length(var.resource_groups)
-    error_message = "Resource group names must be unique case-insensitively."
+    error_message = "Resource-group instance values must be unique, ignoring case."
   }
 
   validation {
     condition = alltrue([
       for rg in var.resource_groups : rg.virtual_network == null ? true : (
-        length(rg.virtual_network.name) >= 2 &&
-        length(rg.virtual_network.name) <= 64 &&
-        can(regex("^[A-Za-z0-9_.-]+$", rg.virtual_network.name)) &&
+        length(rg.virtual_network.instance) >= 1 &&
+        length(rg.virtual_network.instance) <= 40 &&
+        can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", rg.virtual_network.instance)) &&
         length(rg.virtual_network.address_space) > 0 &&
         alltrue([for prefix in rg.virtual_network.address_space : can(cidrhost(prefix, 0))]) &&
-        length(distinct([for subnet in rg.virtual_network.subnets : lower(subnet.name)])) == length(rg.virtual_network.subnets) &&
+        length(distinct([for subnet in rg.virtual_network.subnets : lower(subnet.instance)])) == length(rg.virtual_network.subnets) &&
         alltrue([
           for subnet in rg.virtual_network.subnets :
-          length(subnet.name) >= 1 &&
-          length(subnet.name) <= 80 &&
-          can(regex("^[A-Za-z0-9_.-]+$", subnet.name)) &&
+          length(subnet.instance) >= 1 &&
+          length(subnet.instance) <= 40 &&
+          can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", subnet.instance)) &&
           length(subnet.address_prefixes) > 0 &&
           alltrue([for prefix in subnet.address_prefixes : can(cidrhost(prefix, 0))])
         ])
       )
     ])
-    error_message = "Check VNet/subnet names, unique subnet names, and valid non-empty CIDR address ranges."
+    error_message = "Check VNet/subnet instance values (1-40 lowercase letters/digits with single hyphens), unique subnet instances, and valid non-empty CIDR ranges."
   }
 }
