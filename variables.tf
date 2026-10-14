@@ -12,12 +12,12 @@ variable "subscription_id" {
 variable "resource_groups" {
   description = "Simple JSON list of resource groups. Location is centrally fixed to Central US."
   type = list(object({
-    name = string
-    tags = optional(map(string), {})
+    name            = string
+    tags            = optional(map(string), {})
     virtual_network = optional(object({
       name          = string
       address_space = list(string)
-      subnets = optional(list(object({
+      subnets        = optional(list(object({
         name             = string
         address_prefixes = list(string)
       })), [])
