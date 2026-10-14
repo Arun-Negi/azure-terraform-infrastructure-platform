@@ -9,18 +9,41 @@ variable "subscription_id" {
   }
 }
 
-variable "naming" {
-  description = "Organization, application, and environment components shared by every generated resource name."
-  type = object({
-    org = string
-    app = string
-    env = string
-  })
-  nullable = false
+variable "org" {
+  description = "Short organization code used in all generated resource names."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = length(var.org) >= 2 && length(var.org) <= 12 && can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", var.org))
+    error_message = "org must be 2-12 lowercase letters or digits, optionally separated by single hyphens."
+  }
+}
+
+variable "app" {
+  description = "Application or platform code used in all generated resource names."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = length(var.app) >= 2 && length(var.app) <= 16 && can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", var.app))
+    error_message = "app must be 2-16 lowercase letters or digits, optionally separated by single hyphens."
+  }
+}
+
+variable "env" {
+  description = "Environment code used in all generated resource names."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = contains(["dev", "test", "qa", "stage", "prod", "shared", "sandbox"], var.env)
+    error_message = "env must be one of: dev, test, qa, stage, prod, shared, sandbox."
+  }
 }
 
 variable "resource_groups" {
-  description = "Resource groups and optional networking. Resource names are generated from naming.org, naming.app, naming.env, type code, and each resource's instance."
+  description = "Resource groups and optional networking. Resource names are generated from org, app, env, resource type, and each resource's instance."
   type = list(object({
     instance = string
     tags     = optional(map(string), {})
