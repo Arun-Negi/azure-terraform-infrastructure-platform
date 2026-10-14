@@ -6,15 +6,17 @@ run "accepts_json_style_inventory_with_optional_networking" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming       = { org = "acme", app = "platform", env = "dev" }
+    org             = "acme"
+    app             = "platform"
+    env             = "dev"
     resource_groups = [
       {
-        instance        = "core"
-        tags            = { managed_by = "terraform", environment = "test" }
+        instance = "core"
+        tags     = { managed_by = "terraform", environment = "test" }
         virtual_network = {
           instance      = "main"
           address_space = ["10.20.0.0/16"]
-          subnets       = [
+          subnets = [
             { instance = "web", address_prefixes = ["10.20.1.0/24"] },
             { instance = "data", address_prefixes = ["10.20.2.0/24"] }
           ]
@@ -47,7 +49,9 @@ run "rejects_duplicate_resource_group_instances" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming       = { org = "acme", app = "platform", env = "dev" }
+    org             = "acme"
+    app             = "platform"
+    env             = "dev"
     resource_groups = [
       { instance = "duplicate" },
       { instance = "duplicate" }
@@ -62,14 +66,16 @@ run "rejects_invalid_subnet_cidr" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming       = { org = "acme", app = "platform", env = "dev" }
+    org             = "acme"
+    app             = "platform"
+    env             = "dev"
     resource_groups = [
       {
-        instance        = "app"
+        instance = "app"
         virtual_network = {
           instance      = "main"
           address_space = ["10.30.0.0/16"]
-          subnets       = [
+          subnets = [
             { instance = "bad", address_prefixes = ["not-a-cidr"] }
           ]
         }
@@ -85,7 +91,9 @@ run "rejects_generated_vnet_name_over_64_characters" {
 
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
-    naming       = { org = "acme", app = "averylongapplicationname", env = "prod" }
+    org             = "acme"
+    app             = "averylongapplicationname"
+    env             = "prod"
     resource_groups = [
       {
         instance = "core"
