@@ -61,6 +61,17 @@ Open `terraform.tfvars.json` and change the subscription ID, resource group name
 
 To add resources, add objects to the appropriate JSON array. To omit networking for a resource group, omit its `virtual_network` property. Keep resource names stable between applies; renaming or removing resources can cause Terraform to replace or destroy infrastructure.
 
+### VS Code JSON IntelliSense
+
+The repository includes a JSON Schema at `schemas/terraform-input.schema.json` and a workspace setting at `.vscode/settings.json`. When you open this repository in VS Code and edit `terraform.tfvars.json`, IntelliSense provides field suggestions, descriptions, and basic validation for required fields, names, and CIDR formatting.
+
+1. Open the repository folder in VS Code (not just the JSON file by itself).
+2. Copy the example: `cp terraform.tfvars.json.example terraform.tfvars.json`.
+3. Open `terraform.tfvars.json` and place the cursor inside an object to see suggestions; hover over a property to read its description.
+4. Follow the schema hints, then run `terraform validate` and `terraform plan` before applying.
+
+The schema catches common input mistakes in the editor, but it cannot validate every Azure rule (such as CIDR overlap, whether a subnet fits inside its VNet, or whether a name already exists in Azure). Terraform validation and the Azure provider remain authoritative.
+
 ## Deploy
 
 1. Install Terraform 1.6+ and Azure CLI.
