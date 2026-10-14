@@ -49,6 +49,7 @@ Use this structure as the platform grows; migrate incrementally rather than movi
 │   ├── staging.json
 │   └── prod.json
 ├── modules/
+│   ├── naming/                               # shared name generation and length validation
 │   ├── resource-group/
 │   ├── virtual-network/
 │   ├── storage-account/                       # future example
@@ -172,7 +173,8 @@ Every new service must state which rules apply and where each is enforced.
 
 ### Global rules
 - Location remains `centralus`; users cannot override it.
-- Resource names follow Azure's service-specific constraints. Do not apply resource-group rules to every resource type.
+- Resource names are generated centrally as `{org}-{app}-{env}-{type}-{instance}`. The type code is platform-controlled; every resource exposes its own user-controlled `instance`.
+- Enforce each Azure resource type's own final generated-name length and character restrictions. Do not apply resource-group rules to every resource type.
 - Require ownership and management tags where supported. Establish the platform's mandatory tag list with the governance owner.
 - Reject unknown JSON properties unless a documented extension point is required.
 - Use approved AzureRM provider versions and pin Terraform/tool versions in CI.
@@ -194,6 +196,21 @@ For every service, document:
 9. Terraform validation, automated tests, and Azure Policy coverage.
 
 Do not invent SKU lists from memory. Verify them against the chosen AzureRM provider documentation and the service's current Azure support before adding an allowlist.
+
+## Naming module standard
+
+The shared `modules/naming` module is the single source of truth for generated names. Its public contract is:
+
+```text
+{org}-{app}-{env}-{type}-{instance}
+```
+
+- `org`, `app`, and `env` are shared JSON inputs; `type` is an approved platform-owned code; `instance` is supplied per resource.
+- Every new service must register its type code, Azure final-name maximum length, and allowed final-name pattern in the root naming requests. The service module must consume the generated name rather than concatenate its own.
+- The current type codes and maximum lengths are `rg` (90), `vnet` (64), and `snet` (80). Confirm limits against current Azure service documentation before adding a new resource type.
+- JSON Schema checks the shape and length of individual components. Terraform's naming module validates the final assembled string because standard JSON Schema cannot dynamically subtract the shared prefix length from a resource-specific limit.
+- Keep the `instance` value stable after deployment. Changing it changes the generated Azure name and may force resource replacement. Use unique resource-group instances and unique subnet instances within each VNet.
+- If a future Azure service imposes special naming rules (for example, globally unique names or characters restricted beyond the platform pattern), add a service-specific validator and schema description; do not weaken global rules to accommodate it.
 
 ## 8. New service onboarding: required pull-request checklist
 
@@ -275,7 +292,7 @@ Resource deletion must be deliberate. Document whether deletion is reversible, w
 
 ## 14. Current implementation vs. planned capability
 
-The existing repository implements JSON-driven resource groups, optional virtual networks and subnets, a VS Code JSON Schema, basic naming/CIDR validation, tests, and example Azure Policy definitions. Other service modules, full multi-environment deployment automation, remote state, OIDC deployment, and policy assignments must be treated as future work until implemented and verified.
+The repository implements JSON-driven resource groups, optional virtual networks and subnets, a shared naming module for `{org}-{app}-{env}-{type}-{instance}`, resource-specific final-name length checks, a VS Code JSON Schema, CIDR validation, tests, and example Azure Policy definitions. Other service modules, full multi-environment deployment automation, remote state, OIDC deployment, and policy assignments must be treated as future work until implemented and verified.
 
 Do not describe a restriction as “enforced” solely because it appears in this document or a schema. Confirm the corresponding Terraform validation, automated test, Azure Policy assignment, RBAC control, or deployment gate actually exists.
 
