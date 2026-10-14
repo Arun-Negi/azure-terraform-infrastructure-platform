@@ -66,7 +66,7 @@ run "rejects_invalid_subnet_cidr" {
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.30.0.0/16"]
-          subnets = [
+          subnets       = [
             { name = "snet-bad", address_prefixes = ["not-a-cidr"] }
           ]
         }
