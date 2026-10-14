@@ -8,8 +8,8 @@ run "accepts_json_style_inventory_with_optional_networking" {
     subscription_id = "00000000-0000-0000-0000-000000000000"
     resource_groups = [
       {
-        name = "rg-app-centralus"
-        tags = { managed_by = "terraform", environment = "test" }
+        name            = "rg-app-centralus"
+        tags            = { managed_by = "terraform", environment = "test" }
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.20.0.0/16"]
@@ -62,7 +62,7 @@ run "rejects_invalid_subnet_cidr" {
     subscription_id = "00000000-0000-0000-0000-000000000000"
     resource_groups = [
       {
-        name = "rg-app"
+        name            = "rg-app"
         virtual_network = {
           name          = "vnet-app"
           address_space = ["10.30.0.0/16"]
