@@ -4,8 +4,8 @@ locals {
 
   allowed_generated_name_pattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
 
-  # The same naming module is used for every currently supported resource type.
-  # Limits are Azure-specific: resource group 90, VNet 64, subnet 80.
+  # Every supported resource type uses the shared naming module.
+  # Azure name limits: resource group 90, VNet 64, subnet 80.
   naming_requests = merge(
     {
       for rg in var.resource_groups : "rg-${rg.instance}" => {
@@ -40,8 +40,6 @@ locals {
     }
   )
 
-  # The generated resource-group name is used as the Terraform key so the
-  # addresses remain human-readable; instance values are the user-facing IDs.
   resource_groups = {
     for rg in var.resource_groups :
     rg.instance => merge(rg, {
