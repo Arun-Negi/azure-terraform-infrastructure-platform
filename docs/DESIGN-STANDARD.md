@@ -253,7 +253,9 @@ Pin third-party GitHub Actions to reviewed immutable commit SHAs before treating
 
 - Terraform CLI minimum supported version is `1.16.6`; CI pins `1.16.6` so pull requests run against a predictable version. Keep the CLI requirement and CI pin aligned.
 - Use the latest stable release for upgrades, not alpha, beta, or release-candidate builds. Review release notes and test the configuration before changing the pin.
-- The AzureRM provider constraint currently stays within major version `4.x`. Provider upgrades must be deliberate and tested; do not use an unconstrained provider version.
+- The AzureRM provider is pinned to `5.9.0` in `versions.tf`. This is a major upgrade from 4.x and must be reviewed and tested against the official AzureRM 5.0 upgrade guide before applying to existing state.
+- AzureRM 5.x no longer registers resource providers by default. This platform requests `Microsoft.Resources` and `Microsoft.Network`; deployment identities need registration permissions unless registration is managed centrally.
+- Commit `.terraform.lock.hcl` after successful initialization on supported platforms.
 - Commit the Terraform dependency lock file (`.terraform.lock.hcl`) after a successful `terraform init` on supported platforms. Review provider checksum changes as part of dependency upgrades.
 - Upgrade procedure: change the CI pin and Terraform constraint together, initialize to update provider selections if needed, run formatting, validation, tests, and a non-production plan, then verify GitHub Actions before merging. Do not claim the upgrade is complete until CI passes.
 
