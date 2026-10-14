@@ -17,7 +17,7 @@ variable "resource_groups" {
     virtual_network = optional(object({
       name          = string
       address_space = list(string)
-      subnets        = optional(list(object({
+      subnets       = optional(list(object({
         name             = string
         address_prefixes = list(string)
       })), [])
