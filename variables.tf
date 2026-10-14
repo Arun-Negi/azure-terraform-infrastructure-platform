@@ -54,7 +54,7 @@ variable "resource_groups" {
       for rg in values(var.resource_groups) :
       lower(trimspace(rg.location)) == "centralus"
     ])
-    error_message = "Every resource group must use the Azure region identifier "centralus"."
+    error_message = "Every resource group must use the Azure region identifier centralus."
   }
 
   validation {
