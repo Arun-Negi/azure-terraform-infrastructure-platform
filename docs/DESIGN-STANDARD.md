@@ -249,7 +249,15 @@ A deployment workflow should be separate from validation. It should use protecte
 
 Pin third-party GitHub Actions to reviewed immutable commit SHAs before treating the workflow as production hardened.
 
-## 11. Versioning and change management
+## 11. Toolchain and provider version policy
+
+- Terraform CLI minimum supported version is `1.16.6`; CI pins `1.16.6` so pull requests run against a predictable version. Keep the CLI requirement and CI pin aligned.
+- Use the latest stable release for upgrades, not alpha, beta, or release-candidate builds. Review release notes and test the configuration before changing the pin.
+- The AzureRM provider constraint currently stays within major version `4.x`. Provider upgrades must be deliberate and tested; do not use an unconstrained provider version.
+- Commit the Terraform dependency lock file (`.terraform.lock.hcl`) after a successful `terraform init` on supported platforms. Review provider checksum changes as part of dependency upgrades.
+- Upgrade procedure: change the CI pin and Terraform constraint together, initialize to update provider selections if needed, run formatting, validation, tests, and a non-production plan, then verify GitHub Actions before merging. Do not claim the upgrade is complete until CI passes.
+
+## 12. Versioning and change management
 
 Treat the JSON configuration and module interfaces as APIs:
 - **Patch:** documentation, test additions, or compatible bug fixes.
@@ -258,19 +266,19 @@ Treat the JSON configuration and module interfaces as APIs:
 
 For breaking changes, document old and new JSON examples, migration steps, rollback considerations, and a deprecation period where feasible. Record significant architecture choices in `docs/decisions/` with context, decision, alternatives, and consequences.
 
-## 12. Operations, observability and lifecycle
+## 13. Operations, observability and lifecycle
 
 For each service, define how operators discover resource IDs, monitor health, retrieve diagnostics, rotate secrets, recover data, and retire resources. Prefer explicit outputs for IDs and endpoints, but do not output secret material. Add diagnostics and alerting defaults where required by platform standards.
 
 Resource deletion must be deliberate. Document whether deletion is reversible, whether data can be lost, and how backups or retention policies apply. Consider Azure resource locks for critical shared or production resources, while ensuring the lifecycle workflow accounts for them.
 
-## 13. Current implementation vs. planned capability
+## 14. Current implementation vs. planned capability
 
 The existing repository implements JSON-driven resource groups, optional virtual networks and subnets, a VS Code JSON Schema, basic naming/CIDR validation, tests, and example Azure Policy definitions. Other service modules, full multi-environment deployment automation, remote state, OIDC deployment, and policy assignments must be treated as future work until implemented and verified.
 
 Do not describe a restriction as “enforced” solely because it appears in this document or a schema. Confirm the corresponding Terraform validation, automated test, Azure Policy assignment, RBAC control, or deployment gate actually exists.
 
-## 14. Suggested implementation roadmap
+## 15. Suggested implementation roadmap
 
 **Phase 1 — Stabilize the contract**
 - Keep the current resource-group/VNet/subnet behavior.
@@ -292,7 +300,7 @@ Do not describe a restriction as “enforced” solely because it appears in thi
 **Phase 5 — Scale governance**
 - Add automated security checks, cost controls, drift detection, operational monitoring, module versioning, and a service catalog as needed.
 
-## 15. Developer quick reference
+## 16. Developer quick reference
 
 Before opening a PR, ask:
 - Does the JSON describe intent rather than Terraform internals?
