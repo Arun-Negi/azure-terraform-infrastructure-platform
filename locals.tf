@@ -8,7 +8,7 @@ locals {
         rg_key            = rg_key
         subnet_key        = subnet_key
         name               = subnet.name
-        address_prefixes  = subnet.address_prefixes
+        address_prefixes   = subnet.address_prefixes
       }
     ]
   ])
