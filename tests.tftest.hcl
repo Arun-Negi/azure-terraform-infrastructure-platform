@@ -42,7 +42,7 @@ run "accepts_json_style_inventory_with_optional_networking" {
   }
 }
 
-run "rejects_duplicate_resource_group_names_case_insensitively" {
+run "rejects_duplicate_resource_group_instances" {
   command = plan
 
   variables {
@@ -50,7 +50,7 @@ run "rejects_duplicate_resource_group_names_case_insensitively" {
     naming = { org = "acme", app = "platform", env = "dev" }
     resource_groups = [
       { instance = "duplicate" },
-      { instance = "DUPLICATE" }
+      { instance = "duplicate" }
     ]
   }
 
@@ -78,4 +78,24 @@ run "rejects_invalid_subnet_cidr" {
   }
 
   expect_failures = [var.resource_groups]
+}
+
+run "rejects_generated_vnet_name_over_64_characters" {
+  command = plan
+
+  variables {
+    subscription_id = "00000000-0000-0000-0000-000000000000"
+    naming = { org = "acme", app = "averylongapplicationname", env = "prod" }
+    resource_groups = [
+      {
+        instance = "core"
+        virtual_network = {
+          instance      = "averylongnetworkinstancename"
+          address_space = ["10.40.0.0/16"]
+        }
+      }
+    ]
+  }
+
+  expect_failures = [module.naming]
 }
