@@ -16,6 +16,8 @@ on:
       - "**/*.tf"
       - "**/*.tftest.hcl"
       - "terraform.tfvars.json.example"
+      - "schemas/**"
+      - "docs/**"
       - "policies/**"
       - ".github/workflows/**"
 
