@@ -1,32 +1,89 @@
 # Azure Terraform Infrastructure Platform
 
-A scalable, configuration-driven Terraform root module for deploying **N resource groups in one run**, with optional virtual networks and multiple subnets per resource group. The desired infrastructure is declared as data in a map; Terraform expands resources with `for_each`, so adding resource groups does not require copying resource blocks.
+A scalable, configuration-driven Terraform root module for deploying multiple Azure resource groups in one run, with an optional virtual network and multiple subnets per group. The end user controls the inventory in `terraform.tfvars`; Terraform expands the map using `for_each`.
 
-## Capabilities
+## What the end user controls
 
-- Create any number of resource groups in one plan/apply.
-- Optionally create one VNet and multiple subnets for each resource group.
-- Apply tags to resource groups and VNets.
-- Fail early for missing/empty input, invalid resource-group name characters/length, trailing-period resource-group names, case-insensitive duplicate RG names, and malformed network input structure.
-- Run Terraform formatting and configuration validation in GitHub Actions.
-- Keep the design extensible for additional Azure resource types and policy checks.
+### How many resource groups?
 
-## Repository layout
+The number of resource groups is the number of entries under `resource_groups`. For example, three entries create three resource groups. Add or remove entries to change the requested count. There is no hardcoded count in the Terraform resources; actual deployment size is still bounded by subscription quotas, API throttling, permissions, and operational considerations.
+
+### How many other resources?
+
+Each entry can optionally include a `virtual_network` object. If present, Terraform creates one VNet for that resource group. The number of subnets is the number of entries under that VNet's `subnets` map. This starter currently supports resource groups, VNets, and subnets; it does not yet model arbitrary Azure resource types, VM sizes, storage SKUs, or App Service tiers.
+
+### How does the end user pass names?
+
+The map key (such as `platform_dev`) is a stable Terraform identifier, not the Azure resource name. The `name` field is the actual Azure name. Keep map keys stable over time because changing a key changes the Terraform resource address and may cause replacement or recreation.
+
+Example:
+
+```hcl
+subscription_id = "00000000-0000-0000-0000-000000000000"
+
+resource_groups = {
+  platform_dev = {
+    name     = "rg-platform-dev-centralus"
+    location = "centralus"
+    tags = {
+      environment = "dev"
+      managed_by  = "terraform"
+    }
+    virtual_network = {
+      name          = "vnet-platform-dev"
+      address_space = ["10.10.0.0/16"]
+      subnets = {
+        app = {
+          name             = "snet-app"
+          address_prefixes = ["10.10.1.0/24"]
+        }
+        data = {
+          name             = "snet-data"
+          address_prefixes = ["10.10.2.0/24"]
+        }
+      }
+    }
+  }
+
+  shared_monitoring = {
+    name     = "rg-shared-monitoring-centralus"
+    location = "centralus"
+    tags     = { environment = "shared", managed_by = "terraform" }
+  }
+}
+```
+
+In this example there are two resource groups, one VNet, and two subnets. The second group has no `virtual_network`, so no VNet or subnet is created for it. To deploy 20 groups, define 20 entries. For large inventories, generate and review a `.tfvars` file from YAML/JSON rather than manually copying blocks.
+
+## Current repository layout
 
 - `versions.tf`: Terraform and AzureRM provider constraints.
-- `variables.tf`: typed inventory input and custom validations.
-- `main.tf`: map-driven resource creation using `for_each`.
-- `outputs.tf`: resource IDs and names.
-- `terraform.tfvars.example`: two resource groups, one VNet, and multiple subnets.
-- `.github/workflows/terraform-validate.yml`: CI formatting and validation.
+- `variables.tf`: typed inventory plus input validations.
+- `locals.tf`: derives a flattened subnet map from the nested inventory.
+- `main.tf`: creates resource groups, VNets, and subnets using `for_each`.
+- `outputs.tf`: IDs and names for created resources.
+- `terraform.tfvars.example`: example inventory.
+- `.github/workflows/terraform-validate.yml`: formatting and static validation.
 
-## Deploy N resource groups in one run
+## Enforced rules in this version
+
+- At least one resource group must be declared.
+- Resource group names are 1-90 characters, use the configured allowed character set, and cannot end with a period.
+- Resource group names are unique case-insensitively within this input.
+- All resource groups must specify the Azure region identifier `centralus` (Central US).
+- VNet names must be 2-64 characters and use letters, digits, periods, underscores, or hyphens.
+- Subnet names must be 1-80 characters and use letters, digits, periods, underscores, or hyphens.
+- Subnet names are unique case-insensitively within each VNet.
+- VNet address spaces and subnet prefixes must be present and syntactically valid CIDRs.
+
+These checks fail during Terraform validation/plan evaluation rather than waiting for the Azure create request. The custom rules intentionally apply to the resource types supported by this starter; different resource types need their own rule sets.
+
+## Deploy
 
 1. Install Terraform 1.6+ and Azure CLI.
-2. Authenticate to Azure with your approved identity and select the target subscription.
-3. Copy `terraform.tfvars.example` to `terraform.tfvars`; set the actual subscription ID and desired inventory.
-4. Add or remove entries under `resource_groups`. Each entry creates one resource group. Include `virtual_network` only for groups that need a VNet.
-5. Run:
+2. Authenticate to Azure using your approved identity and confirm the target subscription.
+3. Copy `terraform.tfvars.example` to `terraform.tfvars`, then set your actual subscription ID and inventory.
+4. Run:
 
 ```bash
 terraform init
@@ -36,55 +93,36 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-Review the plan before applying. Use a secure remote backend for team/CI use; never commit state files or real `.tfvars` files.
+Always inspect the plan before applying. Use a secure remote backend for team/CI use; never commit state files or real `.tfvars` files.
 
-## Scaling pattern
+## ARM schemas, provider schemas, SKUs, tiers, and Azure restrictions
 
-The input is a map keyed by a stable logical identifier:
+Azure's naming rules vary by resource provider and resource type. SKU and tier values are also resource-specific: for example, storage accounts, virtual machines, databases, and App Service plans expose different properties and allowed values. The current resources (resource group, VNet, subnet) do not have a SKU/tier property, so there is no meaningful SKU/tier allowlist to enforce for them. When a new resource type is added, its own inputs and validation rules must be added.
 
-```hcl
-resource_groups = {
-  app_dev = {
-    name     = "rg-app-dev-eastus"
-    location = "eastus"
-    tags     = { environment = "dev", managed_by = "terraform" }
-  }
-  data_dev = {
-    name     = "rg-data-dev-eastus"
-    location = "eastus"
-    tags     = { environment = "dev", managed_by = "terraform" }
-  }
-}
-```
+A reliable layered approach is:
 
-Add as many entries as required. A map key should be stable over time because changing a key changes the Terraform resource address. For large inventories, generate a reviewed `.tfvars` file from YAML/JSON rather than duplicating HCL blocks.
+1. **Terraform type constraints and validations**: enforce fixed policy such as Central US, required tags, naming patterns, and inventory structure.
+2. **AzureRM provider schema**: pin a provider version and use its typed resource arguments and provider-side validation for supported fields and enums.
+3. **ARM resource-provider/API contract**: keep the exact resource type and API version explicit when using ARM/AzAPI. ARM template JSON schemas validate template structure, but they do not guarantee every live constraint (such as quota, RBAC, provider registration, conflicts, or policy) can be determined offline.
+4. **Policy-as-code and Azure Policy**: use Checkov/OPA or equivalent for plan/config checks and Azure Policy for subscription-level rules such as allowed locations, approved SKUs, required tags, and public network access.
+5. **Live preflight and tests**: test valid and invalid inputs in a non-production subscription; a successful `terraform validate` is not a guarantee that Azure will accept the deployment.
 
-## Azure rules, ARM schemas, and validation boundaries
+Official references:
+- [Azure resource naming rules](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules)
+- [ARM template structure and schema](https://learn.microsoft.com/en-us/azure/azure-resource-manager/resource-group-authoring-templates)
+- [ARM template resource declaration](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-declaration)
+- [Microsoft.Resources/resourceGroups API reference](https://learn.microsoft.com/en-us/azure/templates/microsoft.resources/2021-01-01/resourcegroups)
 
-There is no single ARM schema that contains every live Azure restriction for every resource. ARM template schemas describe template structure; each resource provider and API version also has its own contract, and some rules depend on the live subscription or tenant.
+### Schema-driven enhancement planned
 
-This project uses several validation layers:
+For stronger schema coverage, the next phase should maintain a versioned inventory of supported resource types and API versions, generate or validate input contracts from the corresponding provider/API schemas, and add automated negative tests for each constraint. Keep schema-derived checks separate from organization policy (for example, Central US only) so that Azure service rules and company rules are not confused.
 
-1. **Terraform type constraints and custom validations** catch errors that this module can determine locally. Resource-group name validation follows the documented 1–90 character limit and allowed character set, including the no-trailing-period rule.
-2. **AzureRM provider schema and validation** checks supported arguments, types, and many resource-specific constraints.
-3. **Azure Resource Manager/resource providers** are authoritative for API-level rules, supported locations, quota, provider registration, RBAC, Azure Policy, uniqueness in the live scope, and conflicts with existing resources.
-4. **Azure Policy** should enforce organization-wide rules such as allowed regions, mandatory tags, approved SKUs, private networking, and public-access restrictions.
+## Production hardening still required
 
-A successful `terraform validate` does not guarantee an Azure deployment will succeed. We deliberately do not claim that a handful of custom regexes replicate every ARM/OpenAPI rule. If strict schema conformance is a requirement, add versioned schema-driven tests for each supported resource type/API version and pin the provider versions those tests target.
-
-### Recommended hardening before production
-
-- Commit `.terraform.lock.hcl` after initializing with the intended provider version.
-- Configure an Azure Storage remote backend with private access, RBAC, and state locking.
-- Use GitHub Actions OIDC instead of client secrets; split plan and apply identities and scope them least-privilege.
-- Protect production with required reviewers and apply the exact reviewed plan.
-- Add `tflint`, Checkov or Trivy, unit tests, integration tests, and scheduled drift reporting.
-- Add Azure Policy assignments for constraints that should be centrally enforced.
-- Test invalid names, duplicate names, bad locations, subnet overlaps, denied SKUs, and policy violations in a non-production subscription.
-
-## Important boundaries
-
-- The caller must have permissions to create the requested resources in the selected subscription.
-- CI currently runs formatting and static Terraform validation only; it does not authenticate to Azure or deploy resources.
-- Changing/removing a resource-group map key or inventory entry can replace or destroy infrastructure. Review plans carefully.
-- Azure resources can incur charges. Destroy test resources only after verifying the selected subscription and plan.
+- Initialize with the intended AzureRM provider version and commit `.terraform.lock.hcl`.
+- Configure an Azure Storage remote backend with restricted access, RBAC, and state locking.
+- Use GitHub Actions OIDC, separate least-privilege plan/apply identities, and protected production approvals.
+- Pin GitHub Actions to immutable commit SHAs.
+- Add tests for invalid names, duplicate names, invalid CIDRs, unsupported locations, denied SKUs, quotas, and Azure Policy violations.
+- Review all plans before applying; removing inventory entries can destroy resources.
+- Azure resources may incur charges. Confirm subscription and plan before applying or destroying.
