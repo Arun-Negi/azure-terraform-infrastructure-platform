@@ -2,8 +2,8 @@ subscription_id = "00000000-0000-0000-0000-000000000000"
 
 resource_groups = {
   platform_dev = {
-    name     = "rg-platform-dev-eastus"
-    location = "eastus"
+    name     = "rg-platform-dev-centralus"
+    location = "centralus"
     tags = {
       environment = "dev"
       managed_by  = "terraform"
@@ -26,8 +26,8 @@ resource_groups = {
   }
 
   shared_monitoring = {
-    name     = "rg-shared-monitoring-eastus"
-    location = "eastus"
+    name     = "rg-shared-monitoring-centralus"
+    location = "centralus"
     tags = {
       environment = "shared"
       managed_by  = "terraform"
