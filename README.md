@@ -75,7 +75,9 @@ The schema catches common input mistakes in the editor, but it cannot validate e
 ## Toolchain versions
 
 - **Terraform CLI:** minimum supported version is `1.16.6`; the validation workflow pins `1.16.6` for reproducible CI runs. Use a compatible stable Terraform 1.x release locally.
-- **AzureRM provider:** constrained to the `4.x` major line by `versions.tf`; Terraform selects a compatible provider version during initialization. Commit `.terraform.lock.hcl` for reproducible provider selections when initializing with the supported provider platform(s).
+- **AzureRM provider:** pinned to `5.9.0` in `versions.tf` so CI and local runs use the same provider release. This is a major upgrade from 4.x; review the [official AzureRM 5.0 upgrade guide](https://registry.terraform.io/providers/hashicorp/azurerm/5.0.0/docs/guides/5.0-upgrade-guide) before applying this version to an existing state.
+- AzureRM 5.x no longer registers Azure resource providers by default. This configuration requests registration of `Microsoft.Resources` and `Microsoft.Network`; the deploying identity must have permission to register them. If your organization centrally manages provider registration, pre-register them and adjust this setting to match that governance model.
+- Commit `.terraform.lock.hcl` after running `terraform init` on the supported platforms to record provider checksums and selections.
 
 ## Deploy
 
