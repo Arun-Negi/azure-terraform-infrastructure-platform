@@ -52,9 +52,9 @@ variable "resource_groups" {
   validation {
     condition = alltrue([
       for rg in values(var.resource_groups) :
-      length(trimspace(rg.location)) > 0
+      lower(trimspace(rg.location)) == "centralus"
     ])
-    error_message = "Every resource group must specify a non-empty Azure location."
+    error_message = "Every resource group must use the Azure region identifier "centralus"."
   }
 
   validation {
@@ -84,4 +84,29 @@ variable "resource_groups" {
     ])
     error_message = "Subnet names must be unique within each virtual network (case-insensitive)."
   }
+  validation {
+    condition = alltrue([
+      for rg in values(var.resource_groups) :
+      rg.virtual_network == null ? true :
+      length(rg.virtual_network.name) >= 2 &&
+      length(rg.virtual_network.name) <= 64 &&
+      can(regex("^[A-Za-z0-9_.-]+$", rg.virtual_network.name))
+    ])
+    error_message = "Virtual network names must be 2-64 characters and contain only letters, numbers, periods, underscores, or hyphens."
+  }
+
+  validation {
+    condition = alltrue([
+      for rg in values(var.resource_groups) :
+      rg.virtual_network == null ? true :
+      alltrue([
+        for subnet in values(rg.virtual_network.subnets) :
+        length(subnet.name) >= 1 &&
+        length(subnet.name) <= 80 &&
+        can(regex("^[A-Za-z0-9_.-]+$", subnet.name))
+      ])
+    ])
+    error_message = "Subnet names must be 1-80 characters and contain only letters, numbers, periods, underscores, or hyphens."
+  }
+
 }
