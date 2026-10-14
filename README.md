@@ -1,127 +1,90 @@
 # Azure Terraform Infrastructure Platform
 
-A portfolio project demonstrating reusable Terraform modules, environment isolation, remote state, GitHub Actions, Azure OIDC authentication, and controlled production deployments.
+A scalable, configuration-driven Terraform root module for deploying **N resource groups in one run**, with optional virtual networks and multiple subnets per resource group. The desired infrastructure is declared as data in a map; Terraform expands resources with `for_each`, so adding resource groups does not require copying resource blocks.
 
-> This is a starter implementation. Review the code and cost/security settings for your subscription before applying it.
+## Capabilities
 
-## Architecture
+- Create any number of resource groups in one plan/apply.
+- Optionally create one VNet and multiple subnets for each resource group.
+- Apply tags to resource groups and VNets.
+- Fail early for missing/empty input, invalid resource-group name characters/length, trailing-period resource-group names, case-insensitive duplicate RG names, and malformed network input structure.
+- Run Terraform formatting and configuration validation in GitHub Actions.
+- Keep the design extensible for additional Azure resource types and policy checks.
 
-- `modules/resource_group`: reusable resource group
-- `modules/network`: reusable VNet, subnet, and network security group
-- `environments/dev`, `staging`, `prod`: independent root modules and variable files
-- `.github/workflows`: pull-request validation/plan and manually approved apply
-- Azure Blob Storage backend: remote state with Azure Blob lease-based state locking
-- GitHub Actions OIDC: short-lived Azure credentials; no client secret stored in GitHub
+## Repository layout
 
-## Prerequisites
+- `versions.tf`: Terraform and AzureRM provider constraints.
+- `variables.tf`: typed inventory input and custom validations.
+- `main.tf`: map-driven resource creation using `for_each`.
+- `outputs.tf`: resource IDs and names.
+- `terraform.tfvars.example`: two resource groups, one VNet, and multiple subnets.
+- `.github/workflows/terraform-validate.yml`: CI formatting and validation.
 
-- Azure subscription and permission to create resource groups, VNets, NSGs, Log Analytics workspaces, and a storage account for state
-- Terraform >= 1.6
-- Azure CLI (`az`) and Git
-- GitHub repository with Actions enabled
+## Deploy N resource groups in one run
 
-## 1. Bootstrap the Terraform state backend (one-time)
-
-State storage must exist before Terraform can use it as a backend. Use a separate, tightly controlled bootstrap step. Example commands (choose a globally unique storage account name; names are lowercase letters/numbers, 3–24 characters):
-
-```bash
-az login
-az account set --subscription "<SUBSCRIPTION_ID>"
-az group create --name rg-tfstate-platform --location centralindia
-az storage account create \
-  --name "<UNIQUE_STORAGE_ACCOUNT_NAME>" \
-  --resource-group rg-tfstate-platform \
-  --location centralindia \
-  --sku Standard_LRS \
-  --kind StorageV2 \
-  --min-tls-version TLS1_2 \
-  --allow-blob-public-access false
-az storage container create \
-  --name tfstate \
-  --account-name "<UNIQUE_STORAGE_ACCOUNT_NAME>" \
-  --auth-mode login
-```
-
-Enable storage account infrastructure encryption and appropriate network restrictions for a real production deployment. Grant the identity running Terraform the minimum required data-plane role, commonly **Storage Blob Data Contributor** scoped to the state container. Do not commit credentials or state files.
-
-Update `backend.hcl.example` with your storage account name and copy it to a local `backend.hcl` (ignored by Git). Then initialize one environment at a time:
+1. Install Terraform 1.6+ and Azure CLI.
+2. Authenticate to Azure with your approved identity and select the target subscription.
+3. Copy `terraform.tfvars.example` to `terraform.tfvars`; set the actual subscription ID and desired inventory.
+4. Add or remove entries under `resource_groups`. Each entry creates one resource group. Include `virtual_network` only for groups that need a VNet.
+5. Run:
 
 ```bash
-cp backend.hcl.example backend.hcl
-# Edit backend.hcl and set the real storage account name.
-terraform -chdir=environments/dev init -backend-config=../../backend.hcl
-terraform -chdir=environments/dev plan -var-file=dev.tfvars
+terraform init
+terraform fmt -recursive
+terraform validate
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
-Repeat for `staging` and `prod`. Each environment uses a distinct state key. Never point two environments at the same key.
+Review the plan before applying. Use a secure remote backend for team/CI use; never commit state files or real `.tfvars` files.
 
-## 2. Configure GitHub OIDC for Azure
+## Scaling pattern
 
-Create an Entra ID app registration/service principal and federated credential that trusts your GitHub repository. Use the exact owner/repository and branch/environment subject. Prefer separate identities and least-privilege scopes for plan and apply, especially for production.
+The input is a map keyed by a stable logical identifier:
 
-Set these GitHub **Actions variables** (identifiers, not credentials):
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_SUBSCRIPTION_ID`
-- `AZURE_TFSTATE_RESOURCE_GROUP`
-- `AZURE_TFSTATE_STORAGE_ACCOUNT`
-- `AZURE_TFSTATE_CONTAINER`
-
-The PR workflow runs format and validation checks without Azure credentials. The manually triggered deployment workflow uses OIDC, initializes the remote backend, creates a plan, and applies it within the selected GitHub Environment. Configure required reviewers for `prod`. For a stricter enterprise workflow, split plan and apply into separate jobs and apply the exact reviewed plan artifact.
-
-In the repository, go to **Settings → Environments** and create `dev`, `staging`, and `prod`. Add required reviewers to `prod`. Configure an Entra federated credential for each environment subject, for example:
-`repo:OWNER/REPOSITORY:environment:prod`
-
-The workflow uses `azure/login` with OIDC. No Azure client secret is needed. Ensure the service principal has only the permissions required by the resources being deployed and by the state backend.
-
-## 3. GitHub Actions setup
-
-1. Push this repository to GitHub.
-2. Configure the variables and Azure federated credentials described above.
-3. Create the GitHub environments: `dev`, `staging`, `prod`.
-4. Open a pull request. Validation and a plan should run for the dev root.
-5. Merge after review. Use **Actions → Terraform Apply → Run workflow** and choose the environment. Production should require an environment reviewer.
-6. Review the plan before applying. This starter deliberately does not auto-apply on pull requests.
-
-## 4. Local workflow
-
-```bash
-terraform -chdir=environments/dev fmt -recursive
-terraform -chdir=environments/dev init -backend-config=../../backend.hcl
-terraform -chdir=environments/dev validate
-terraform -chdir=environments/dev plan -var-file=dev.tfvars
+```hcl
+resource_groups = {
+  app_dev = {
+    name     = "rg-app-dev-eastus"
+    location = "eastus"
+    tags     = { environment = "dev", managed_by = "terraform" }
+  }
+  data_dev = {
+    name     = "rg-data-dev-eastus"
+    location = "eastus"
+    tags     = { environment = "dev", managed_by = "terraform" }
+  }
+}
 ```
 
-Apply only after reviewing the plan:
+Add as many entries as required. A map key should be stable over time because changing a key changes the Terraform resource address. For large inventories, generate a reviewed `.tfvars` file from YAML/JSON rather than duplicating HCL blocks.
 
-```bash
-terraform -chdir=environments/dev apply -var-file=dev.tfvars
-```
+## Azure rules, ARM schemas, and validation boundaries
 
-Destroy resources when you are done testing, after checking the selected subscription and environment:
+There is no single ARM schema that contains every live Azure restriction for every resource. ARM template schemas describe template structure; each resource provider and API version also has its own contract, and some rules depend on the live subscription or tenant.
 
-```bash
-terraform -chdir=environments/dev destroy -var-file=dev.tfvars
-```
+This project uses several validation layers:
 
-## 5. Environment design
+1. **Terraform type constraints and custom validations** catch errors that this module can determine locally. Resource-group name validation follows the documented 1–90 character limit and allowed character set, including the no-trailing-period rule.
+2. **AzureRM provider schema and validation** checks supported arguments, types, and many resource-specific constraints.
+3. **Azure Resource Manager/resource providers** are authoritative for API-level rules, supported locations, quota, provider registration, RBAC, Azure Policy, uniqueness in the live scope, and conflicts with existing resources.
+4. **Azure Policy** should enforce organization-wide rules such as allowed regions, mandatory tags, approved SKUs, private networking, and public-access restrictions.
 
-Each environment is an independent Terraform root module and uses its own state key:
-- `platform/dev.tfstate`
-- `platform/staging.tfstate`
-- `platform/prod.tfstate`
+A successful `terraform validate` does not guarantee an Azure deployment will succeed. We deliberately do not claim that a handful of custom regexes replicate every ARM/OpenAPI rule. If strict schema conformance is a requirement, add versioned schema-driven tests for each supported resource type/API version and pin the provider versions those tests target.
 
-The initial workflow demonstrates PR validation and manual apply. Extend it with environment-specific plans, policy checks, drift detection on a schedule, and separate plan/apply identities before calling it production-ready.
+### Recommended hardening before production
 
-## 6. Suggested next improvements
+- Commit `.terraform.lock.hcl` after initializing with the intended provider version.
+- Configure an Azure Storage remote backend with private access, RBAC, and state locking.
+- Use GitHub Actions OIDC instead of client secrets; split plan and apply identities and scope them least-privilege.
+- Protect production with required reviewers and apply the exact reviewed plan.
+- Add `tflint`, Checkov or Trivy, unit tests, integration tests, and scheduled drift reporting.
+- Add Azure Policy assignments for constraints that should be centrally enforced.
+- Test invalid names, duplicate names, bad locations, subnet overlaps, denied SKUs, and policy violations in a non-production subscription.
 
-- Add `tflint` and Checkov or Trivy configuration scanning.
-- Add Azure Policy / policy-as-code checks.
-- Add scheduled drift detection that reports changes but does not automatically apply them.
-- Add unit/integration tests and module versioning.
-- Add diagnostic settings, private endpoints, and state-storage network restrictions.
-- Document an architecture decision record, failure scenarios, and cost estimate.
+## Important boundaries
 
-## Cleanup and cost
-
-Azure resources may incur charges. Run `terraform destroy` for each environment when finished, and separately remove the state storage only after confirming no state is needed. Keep the state backend until all managed environments have been safely removed.
+- The caller must have permissions to create the requested resources in the selected subscription.
+- CI currently runs formatting and static Terraform validation only; it does not authenticate to Azure or deploy resources.
+- Changing/removing a resource-group map key or inventory entry can replace or destroy infrastructure. Review plans carefully.
+- Azure resources can incur charges. Destroy test resources only after verifying the selected subscription and plan.
