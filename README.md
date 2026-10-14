@@ -63,7 +63,9 @@ In this example there are two resource groups, one VNet, and two subnets. The se
 - `main.tf`: creates resource groups, VNets, and subnets using `for_each`.
 - `outputs.tf`: IDs and names for created resources.
 - `terraform.tfvars.example`: example inventory.
-- `.github/workflows/terraform-validate.yml`: formatting and static validation.
+- `.github/workflows/terraform-validate.yml`: formatting, static validation, and configuration tests.
+- `tests.tftest.hcl`: offline tests for resource scaling and invalid inputs.
+- `policies/azure-policy/`: deployable custom Azure Policy definitions for allowed locations and required governance tags.
 
 ## Enforced rules in this version
 
@@ -116,6 +118,18 @@ Official references:
 ### Schema-driven enhancement planned
 
 For stronger schema coverage, the next phase should maintain a versioned inventory of supported resource types and API versions, generate or validate input contracts from the corresponding provider/API schemas, and add automated negative tests for each constraint. Keep schema-derived checks separate from organization policy (for example, Central US only) so that Azure service rules and company rules are not confused.
+
+## Automated tests and Azure Policy
+
+The CI workflow runs `terraform fmt`, `terraform validate`, and `terraform test`. The test suite uses a mocked AzureRM provider, so it checks Terraform configuration behavior without Azure credentials or deploying billable resources. It currently tests multiple resource groups, optional VNets, subnet scaling, Central US enforcement, duplicate resource-group names, and invalid subnet CIDRs.
+
+Two custom Azure Policy definitions are included under `policies/azure-policy/`:
+- `allowed-locations.json`: denies resource groups and VNets outside the configured allowlist (Central US by default).
+- `require-managed-by-tag.json`: denies resource groups and VNets missing the `managed_by` tag by default.
+
+These JSON files are policy definitions, not active subscription assignments. A subscription or management-group administrator must create and assign them at the appropriate scope; test the effect in audit mode or a non-production scope before enforcing deny. Azure Policy and Terraform input validation serve different purposes: local checks fail early, while assigned Azure Policy governs deployments across tools and identities.
+
+The provider schema remains the authoritative typed contract for the AzureRM resources used here. This repository does not claim to automatically validate every Azure resource type or every live ARM constraint. To add a new resource type safely, pin the provider/API version, add its typed inputs and documented naming/enum validations, add negative tests, and add relevant Azure Policy rules. Azure can still reject requests because of quotas, RBAC, provider registration, existing-name conflicts, or other live conditions.
 
 ## Production hardening still required
 
