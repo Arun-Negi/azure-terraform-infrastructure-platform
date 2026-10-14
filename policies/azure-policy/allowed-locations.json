@@ -1,0 +1,42 @@
+{
+  "properties": {
+    "displayName": "Restrict supported platform resources to Central US",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Denies resource groups and virtual networks outside Central US. Subnets inherit the virtual network location.",
+    "metadata": {
+      "category": "Location",
+      "version": "1.0.0"
+    },
+    "parameters": {
+      "allowedLocations": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed locations",
+          "description": "Azure region names allowed for this platform."
+        },
+        "defaultValue": ["centralus"]
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "in": [
+              "Microsoft.Resources/subscriptions/resourceGroups",
+              "Microsoft.Network/virtualNetworks"
+            ]
+          },
+          {
+            "field": "location",
+            "notIn": "[parameters('allowedLocations')]"
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  }
+}
