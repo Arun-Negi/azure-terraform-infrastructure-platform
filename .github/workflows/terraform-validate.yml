@@ -34,5 +34,9 @@ jobs:
         run: terraform init -backend=false
       - name: Validate configuration
         run: terraform validate
+      - name: Validate Azure Policy JSON syntax
+        run: |
+          python -m json.tool policies/azure-policy/allowed-locations.json > /dev/null
+          python -m json.tool policies/azure-policy/require-managed-by-tag.json > /dev/null
       - name: Run Terraform configuration tests
         run: terraform test
