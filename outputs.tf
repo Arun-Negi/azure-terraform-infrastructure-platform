@@ -28,3 +28,8 @@ output "subnets" {
     }
   }
 }
+
+output "generated_resource_names" {
+  description = "All validated generated names, keyed by resource type and instance."
+  value       = module.naming.names
+}
