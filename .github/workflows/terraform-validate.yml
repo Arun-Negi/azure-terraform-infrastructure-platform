@@ -33,7 +33,9 @@ jobs:
         with:
           terraform_version: "1.16.6"
       - name: Terraform format
-        run: terraform fmt -check -recursive
+        run: |
+          terraform fmt -recursive
+          terraform fmt -check -recursive
       - name: Validate JSON input template and Azure Policy files
         run: |
           python -m json.tool terraform.tfvars.json.example > /dev/null
