@@ -62,3 +62,23 @@ variable "resource_groups" {
     error_message = "Each configured virtual network must have at least one address space, and each subnet must have at least one address prefix."
   }
 }
+
+  
+  validation {
+    condition = alltrue([
+      for rg in values(var.resource_groups) :
+      rg.virtual_network == null ? true :
+      length(distinct([
+        for subnet in values(rg.virtual_network.subnets) : lower(subnet.name)
+      ])) == length(rg.virtual_network.subnets)
+    ])
+    error_message = "Subnet names must be unique within each virtual network (case-insensitive)."
+  }
+
+  validation {
+    condition = alltrue([
+      for rg in values(var.resource_groups) :
+      length(trimspace(rg.location)) > 0
+    ])
+    error_message = "Every resource group must specify a non-empty Azure location."
+  }
