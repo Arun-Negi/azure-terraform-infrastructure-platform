@@ -1,8 +1,8 @@
 module "naming" {
   source    = "./modules/naming"
-  org       = var.naming.org
-  app       = var.naming.app
-  env       = var.naming.env
+  org       = var.org
+  app       = var.app
+  env       = var.env
   resources = local.naming_requests
 }
 
