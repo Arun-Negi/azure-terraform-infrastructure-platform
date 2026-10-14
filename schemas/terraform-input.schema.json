@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/terraform-input.schema.json",
+  "title": "Azure Terraform Infrastructure Input",
+  "description": "User-editable JSON input for creating Azure resource groups and optional virtual networks and subnets. Azure location is fixed to Central US by Terraform.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subscription_id", "resource_groups"],
+  "properties": {
+    "subscription_id": {
+      "type": "string",
+      "title": "Azure subscription ID",
+      "description": "Required Azure subscription GUID where resources will be created. Replace the example placeholder with your subscription ID.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "examples": ["00000000-0000-0000-0000-000000000000"]
+    },
+    "resource_groups": {
+      "type": "array",
+      "title": "Resource groups",
+      "description": "Each object creates one Azure resource group. Add or remove objects to control how many resource groups are provisioned. Location is fixed to Central US.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/resourceGroup"
+      }
+    }
+  },
+  "$defs": {
+    "resourceGroup": {
+      "type": "object",
+      "title": "Resource group",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Resource group name",
+          "description": "Azure resource group name: 1-90 characters; letters, numbers, underscore, parentheses, hyphen and period are allowed. Must not end with a period. Names must be unique, ignoring case.",
+          "minLength": 1,
+          "maxLength": 90,
+          "pattern": "^[A-Za-z0-9_().-]+$",
+          "examples": ["rg-platform-dev-centralus"]
+        },
+        "tags": {
+          "type": "object",
+          "title": "Tags",
+          "description": "Optional Azure tags as string key/value pairs. Recommended: environment and managed_by.",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "examples": [
+            {
+              "environment": "dev",
+              "managed_by": "terraform",
+              "cost_center": "engineering"
+            }
+          ]
+        },
+        "virtual_network": {
+          "type": "object",
+          "title": "Virtual network (optional)",
+          "description": "Include this property only when this resource group needs a virtual network. Omit it to create only the resource group.",
+          "additionalProperties": false,
+          "required": ["name", "address_space"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "title": "Virtual network name",
+              "description": "VNet name: 2-64 characters; letters, numbers, underscore, period and hyphen are allowed.",
+              "minLength": 2,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.-]+$",
+              "examples": ["vnet-platform-dev"]
+            },
+            "address_space": {
+              "type": "array",
+              "title": "VNet address space",
+              "description": "One or more IPv4/IPv6 CIDR address ranges assigned to the virtual network, for example 10.10.0.0/16.",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "format": "ipv4-cidr",
+                "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
+                "examples": ["10.10.0.0/16"]
+              }
+            },
+            "subnets": {
+              "type": "array",
+              "title": "Subnets (optional)",
+              "description": "Optional list of subnets inside this VNet. Add one object per subnet.",
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/subnet"
+              }
+            }
+          }
+        }
+      }
+    },
+    "subnet": {
+      "type": "object",
+      "title": "Subnet",
+      "additionalProperties": false,
+      "required": ["name", "address_prefixes"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Subnet name",
+          "description": "Subnet name: 1-80 characters; letters, numbers, underscore, period and hyphen are allowed. Names within the same VNet must be unique, ignoring case.",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.-]+$",
+          "examples": ["snet-app"]
+        },
+        "address_prefixes": {
+          "type": "array",
+          "title": "Subnet address prefixes",
+          "description": "One or more CIDR address ranges for the subnet, for example 10.10.1.0/24. Ensure each subnet range is within the VNet address space and does not overlap other subnets.",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
+            "examples": ["10.10.1.0/24"]
+          }
+        }
+      }
+    }
+  }
+}
