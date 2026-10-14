@@ -2,67 +2,56 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/terraform-input.schema.json",
   "title": "Azure Terraform Infrastructure Input",
-  "description": "JSON-only Azure infrastructure input. Resource names are generated using {org}-{app}-{env}-{type}-{instance}; Terraform enforces the final Azure name length for each resource type.",
+  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["subscription_id", "naming", "resource_groups"],
+  "required": ["subscription_id", "org", "app", "env", "resource_groups"],
   "properties": {
     "subscription_id": {
       "type": "string",
       "title": "Azure subscription ID",
-      "description": "Required Azure subscription GUID. Replace the example placeholder with your subscription ID.",
+      "description": "Replace the placeholder with your Azure subscription GUID.",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "examples": ["00000000-0000-0000-0000-000000000000"]
     },
-    "naming": {
-      "type": "object",
-      "title": "Organization-wide naming standard",
-      "description": "Shared prefix components used by every resource. Generated pattern: {org}-{app}-{env}-{type}-{instance}. The type code is controlled by the platform.",
-      "additionalProperties": false,
-      "required": ["org", "app", "env"],
-      "properties": {
-        "org": {
-          "type": "string",
-          "title": "Organization code",
-          "description": "2-12 lowercase letters or digits. Keep it short because it is included in every resource name.",
-          "minLength": 2,
-          "maxLength": 12,
-          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "examples": ["acme", "contoso"]
-        },
-        "app": {
-          "type": "string",
-          "title": "Application/platform code",
-          "description": "2-16 lowercase letters or digits, optionally separated by single hyphens.",
-          "minLength": 2,
-          "maxLength": 16,
-          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "examples": ["platform", "payments"]
-        },
-        "env": {
-          "type": "string",
-          "title": "Environment code",
-          "description": "Select an approved environment code.",
-          "enum": ["dev", "test", "qa", "stage", "prod", "shared", "sandbox"],
-          "examples": ["dev", "prod"]
-        }
-      }
+    "org": {
+      "type": "string",
+      "title": "Organization code",
+      "description": "2-12 lowercase letters/digits; optionally use single hyphens.",
+      "minLength": 2,
+      "maxLength": 12,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "examples": ["acme", "contoso"]
+    },
+    "app": {
+      "type": "string",
+      "title": "Application/platform code",
+      "description": "2-16 lowercase letters/digits; optionally use single hyphens.",
+      "minLength": 2,
+      "maxLength": 16,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "examples": ["platform", "payments"]
+    },
+    "env": {
+      "type": "string",
+      "title": "Environment",
+      "description": "Choose an approved environment code.",
+      "enum": ["dev", "test", "qa", "stage", "prod", "shared", "sandbox"],
+      "examples": ["dev", "prod"]
     },
     "resource_groups": {
       "type": "array",
       "title": "Resource groups",
-      "description": "Each object creates one resource group. Add or remove objects to control the count. Provide an instance value for each resource group.",
+      "description": "Add one object per resource group. Add or remove objects to control the number created.",
       "minItems": 1,
-      "items": {
-        "$ref": "#/$defs/resourceGroup"
-      }
+      "items": { "$ref": "#/$defs/resourceGroup" }
     }
   },
   "$defs": {
     "instance": {
       "type": "string",
-      "title": "Resource instance identifier",
-      "description": "1-40 lowercase letters or digits, optionally separated by single hyphens. The final generated name must also fit the resource type's Azure limit.",
+      "title": "Resource instance",
+      "description": "1-40 lowercase letters/digits, optionally separated by single hyphens. Final name must fit the Azure limit.",
       "minLength": 1,
       "maxLength": 40,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -71,47 +60,31 @@
     "resourceGroup": {
       "type": "object",
       "title": "Resource group",
-      "description": "Generated name: {org}-{app}-{env}-rg-{instance}. Final Azure resource-group name limit: 90 characters.",
+      "description": "Generated name: {org}-{app}-{env}-rg-{instance}. Maximum 90 characters.",
       "additionalProperties": false,
       "required": ["instance"],
       "properties": {
-        "instance": {
-          "$ref": "#/$defs/instance",
-          "title": "Resource-group instance",
-          "description": "User-controlled suffix for this resource group. The complete generated name must be 90 characters or fewer."
-        },
+        "instance": { "$ref": "#/$defs/instance", "title": "Resource-group instance" },
         "tags": {
           "type": "object",
-          "title": "Tags",
+          "title": "Tags (optional)",
           "description": "Optional Azure tags as string key/value pairs.",
           "default": {},
-          "additionalProperties": {
-            "type": "string"
-          },
-          "examples": [
-            {
-              "environment": "dev",
-              "managed_by": "terraform",
-              "cost_center": "engineering"
-            }
-          ]
+          "additionalProperties": { "type": "string" },
+          "examples": [{ "environment": "dev", "managed_by": "terraform" }]
         },
         "virtual_network": {
           "type": "object",
           "title": "Virtual network (optional)",
-          "description": "Include only when this resource group needs a VNet. Generated name: {org}-{app}-{env}-vnet-{instance}. Final limit: 64 characters.",
+          "description": "Include only if this resource group needs a VNet. Generated name limit: 64 characters.",
           "additionalProperties": false,
           "required": ["instance", "address_space"],
           "properties": {
-            "instance": {
-              "$ref": "#/$defs/instance",
-              "title": "VNet instance",
-              "description": "User-controlled VNet instance. The complete generated name must be 64 characters or fewer."
-            },
+            "instance": { "$ref": "#/$defs/instance", "title": "VNet instance" },
             "address_space": {
               "type": "array",
               "title": "VNet address space",
-              "description": "One or more IPv4 CIDR ranges, for example 10.10.0.0/16.",
+              "description": "One or more CIDR ranges, for example 10.10.0.0/16.",
               "minItems": 1,
               "items": {
                 "type": "string",
@@ -122,11 +95,8 @@
             "subnets": {
               "type": "array",
               "title": "Subnets (optional)",
-              "description": "Optional list of subnets. Each has its own instance identifier.",
               "default": [],
-              "items": {
-                "$ref": "#/$defs/subnet"
-              }
+              "items": { "$ref": "#/$defs/subnet" }
             }
           }
         }
@@ -135,19 +105,15 @@
     "subnet": {
       "type": "object",
       "title": "Subnet",
-      "description": "Generated name: {org}-{app}-{env}-snet-{instance}. Final Azure subnet name limit: 80 characters.",
+      "description": "Generated name: {org}-{app}-{env}-snet-{instance}. Maximum 80 characters.",
       "additionalProperties": false,
       "required": ["instance", "address_prefixes"],
       "properties": {
-        "instance": {
-          "$ref": "#/$defs/instance",
-          "title": "Subnet instance",
-          "description": "User-controlled subnet instance. The complete generated name must be 80 characters or fewer. Subnet instances must be unique within their VNet."
-        },
+        "instance": { "$ref": "#/$defs/instance", "title": "Subnet instance" },
         "address_prefixes": {
           "type": "array",
-          "title": "Subnet address prefixes",
-          "description": "One or more CIDR ranges for this subnet. Ensure each range fits within the VNet and does not overlap another subnet.",
+          "title": "Subnet CIDR ranges",
+          "description": "Ensure each range fits inside the VNet and does not overlap another subnet.",
           "minItems": 1,
           "items": {
             "type": "string",
