@@ -1,10 +1,8 @@
 {
   "subscription_id": "00000000-0000-0000-0000-000000000000",
-  "naming": {
-    "org": "acme",
-    "app": "platform",
-    "env": "dev"
-  },
+  "org": "acme",
+  "app": "platform",
+  "env": "dev",
   "resource_groups": [
     {
       "instance": "core",
