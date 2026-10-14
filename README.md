@@ -89,6 +89,10 @@ terraform apply tfplan
 
 Review the plan before applying. The sample subscription ID is a placeholder and must be replaced. Never commit real input files, Terraform state, or secrets. Use a secure remote backend and least-privilege identity for team/CI use.
 
+## Developer design standard
+
+For the rules and workflow for adding Azure services while preserving the JSON-only user experience, shared restrictions, testing, environment separation, and deployment controls, see the [Developer Design Standard](docs/DESIGN-STANDARD.md).
+
 ## Validation and governance
 
 Terraform validates resource group names, duplicate names, VNet/subnet names, and CIDR syntax before deployment. GitHub Actions checks Terraform formatting, JSON syntax, configuration validation, and offline Terraform tests with a mocked AzureRM provider. These checks do not deploy resources or guarantee Azure will accept a live request.
