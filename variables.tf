@@ -4,7 +4,7 @@ variable "subscription_id" {
   nullable    = false
 
   validation {
-    condition     = can(regex("^[0-9a-fA-F-]{36}$", var.subscription_id))
+    condition     = can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", var.subscription_id))
     error_message = "subscription_id must be a GUID."
   }
 }
@@ -63,8 +63,12 @@ variable "resource_groups" {
       rg.virtual_network == null ? true :
       length(rg.virtual_network.address_space) > 0 &&
       alltrue([
+        for prefix in rg.virtual_network.address_space : can(cidrhost(prefix, 0))
+      ]) &&
+      alltrue([
         for subnet in values(rg.virtual_network.subnets) :
-        length(subnet.address_prefixes) > 0
+        length(subnet.address_prefixes) > 0 &&
+        alltrue([for prefix in subnet.address_prefixes : can(cidrhost(prefix, 0))])
       ])
     ])
     error_message = "Each configured virtual network must have at least one address space, and each subnet must have at least one address prefix."
