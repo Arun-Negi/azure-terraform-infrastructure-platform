@@ -1,14 +1,14 @@
 resource "azurerm_resource_group" "this" {
-  for_each = var.resource_groups
+  for_each = local.resource_groups
 
   name     = each.value.name
-  location = each.value.location
+  location = local.azure_location
   tags     = each.value.tags
 }
 
 resource "azurerm_virtual_network" "this" {
   for_each = {
-    for key, rg in var.resource_groups : key => rg
+    for key, rg in local.resource_groups : key => rg
     if rg.virtual_network != null
   }
 
