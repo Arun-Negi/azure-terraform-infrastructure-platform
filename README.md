@@ -99,6 +99,49 @@ terraform apply tfplan
 
 Review the plan before applying. Replace the placeholder subscription ID. Never commit real input files, state, or secrets. Use a secure remote backend and least-privilege identity for team/CI use.
 
+## Delete resources safely
+
+Resources are removed by changing the JSON input so it no longer declares the resource, then reviewing and applying a Terraform plan. **Removing an object from JSON does not delete anything until an apply is performed.**
+
+### Delete a resource group
+
+Remove its object from the `resource_groups` array. For example, to remove the `monitoring` resource group, keep only the `core` object:
+
+```json
+"resource_groups": [
+  {
+    "instance": "core"
+  }
+]
+```
+
+Terraform will propose destroying the resource group and any resources it manages inside it. Azure may also contain resources in that group that are not managed by this configuration, so check the impact carefully.
+
+### Delete a subnet
+
+Remove only that subnet's object from the VNet's `subnets` array. Keep the VNet and resource-group objects if you want them to remain.
+
+### Delete a virtual network
+
+Remove the `virtual_network` object from the relevant resource group. Terraform will propose removing the VNet and its managed subnets. Review the plan for dependent resources before proceeding.
+
+### Review before deletion
+
+Run the plan and inspect every proposed destroy action:
+
+```bash
+terraform plan -out=tfplan
+terraform show tfplan
+```
+
+If the plan contains only the intended changes, apply the reviewed plan:
+
+```bash
+terraform apply tfplan
+```
+
+Do not apply a plan if it proposes unexpected deletions. Keep Terraform state safe and backed up. This repository's GitHub Actions workflow is a **validation-only** pipeline: even when run manually, it does not deploy or delete Azure resources. A separate authenticated deployment workflow with appropriate approval controls would be required to apply infrastructure changes from GitHub Actions.
+
 ## Developer design standard
 
 See [Developer Design Standard](docs/DESIGN-STANDARD.md) for rules when adding services while preserving the JSON-only input experience and validation controls.
