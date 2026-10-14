@@ -21,8 +21,7 @@ locals {
         instance        = rg.virtual_network.instance
         max_length      = 64
         allowed_pattern = local.allowed_generated_name_pattern
-      }
-      if rg.virtual_network != null
+      } if rg.virtual_network != null
     },
     {
       for item in flatten([
