@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/common.schema.json",
+  "title": "Shared platform schema definitions",
+  "description": "Reusable fields and constraints shared across Azure service schemas.",
+  "$defs": {
+    "instance": {
+      "type": "string",
+      "title": "Resource instance",
+      "description": "1-40 lowercase letters/digits, optionally separated by single hyphens. Final name must fit the Azure limit.",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "examples": [
+        "core",
+        "main",
+        "app",
+        "data",
+        "001"
+      ]
+    }
+  }
+}
