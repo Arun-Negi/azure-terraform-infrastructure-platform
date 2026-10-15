@@ -105,7 +105,7 @@ run "rejects_generated_vnet_name_over_64_characters" {
     ]
   }
 
-  expect_failures = [output.generated_resource_names]
+  expect_failures = [var.resource_groups]
 }
 
 
