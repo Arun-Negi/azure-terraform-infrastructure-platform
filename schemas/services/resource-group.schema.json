@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/services/resource-group.schema.json",
+  "title": "Azure resource group schema",
+  "description": "Validation rules for a resource group input object. Networking is an optional, separately governed service schema.",
+  "$defs": {
+    "resourceGroup": {
+      "type": "object",
+      "title": "Resource group",
+      "description": "Generated name: {org}-{app}-{env}-rg-{instance}. Maximum 90 characters.",
+      "additionalProperties": false,
+      "required": [
+        "instance"
+      ],
+      "properties": {
+        "instance": {
+          "$ref": "../common.schema.json#/$defs/instance",
+          "title": "Resource-group instance"
+        },
+        "tags": {
+          "type": "object",
+          "title": "Tags (optional)",
+          "description": "Optional Azure tags as string key/value pairs.",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "examples": [
+            {
+              "environment": "dev",
+              "managed_by": "terraform"
+            }
+          ]
+        },
+        "virtual_network": {
+          "type": "object",
+          "title": "Virtual network (optional)",
+          "description": "Include only if this resource group needs a VNet. Generated name limit: 64 characters.",
+          "additionalProperties": false,
+          "required": [
+            "instance",
+            "address_space"
+          ],
+          "properties": {
+            "instance": {
+              "$ref": "#/$defs/instance",
+              "title": "VNet instance"
+            },
+            "address_space": {
+              "type": "array",
+              "title": "VNet address space",
+              "description": "One or more CIDR ranges, for example 10.10.0.0/16.",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
+                "examples": [
+                  "10.10.0.0/16"
+                ]
+              }
+            },
+            "subnets": {
+              "type": "array",
+              "title": "Subnets (optional)",
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/subnet"
+              }
+            }
+          },
+          "$ref": "./virtual-network.schema.json#/$defs/virtualNetwork"
+        }
+      }
+    }
+  }
+}
