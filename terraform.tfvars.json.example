@@ -3,6 +3,14 @@
   "org": "acme",
   "app": "platform",
   "env": "dev",
+  "storage_accounts": [
+    {
+      "instance": "logs001",
+      "resource_group_instance": "core",
+      "replication_type": "LRS",
+      "tags": { "purpose": "diagnostics" }
+    }
+  ],
   "resource_groups": [
     {
       "instance": "core",
