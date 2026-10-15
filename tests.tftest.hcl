@@ -92,18 +92,59 @@ run "rejects_generated_vnet_name_over_64_characters" {
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
     org             = "acme"
-    app             = "averylongapplicationname"
+    app             = "applicationname"
     env             = "prod"
     resource_groups = [
       {
         instance = "core"
         virtual_network = {
-          instance      = "averylongnetworkinstancename"
+          instance      = "averylongnetworkinstanceidentifier123456"
           address_space = ["10.40.0.0/16"]
         }
       }
     ]
   }
 
-  expect_failures = [output.generated_resource_names]
+  expect_failures = [var.resource_groups]
+}
+
+
+run "creates_storage_account_with_secure_defaults" {
+  command = plan
+  variables {
+    subscription_id = "00000000-0000-0000-0000-000000000000"
+    org             = "acme"
+    app             = "platform"
+    env             = "dev"
+    resource_groups = [{ instance = "core", tags = { managed_by = "terraform" } }]
+    storage_accounts = [{
+      instance                = "logs001"
+      resource_group_instance = "core"
+    }]
+  }
+  assert {
+    condition     = length(module.storage_account) == 1
+    error_message = "One storage account JSON entry must produce one storage account module instance."
+  }
+  assert {
+    condition     = module.storage_account["logs001"].name == "acmeplatformdevstlogs001"
+    error_message = "Storage account names must be compact, lowercase, and generated through the shared naming module."
+  }
+}
+
+run "rejects_invalid_storage_replication_type" {
+  command = plan
+  variables {
+    subscription_id = "00000000-0000-0000-0000-000000000000"
+    org             = "acme"
+    app             = "platform"
+    env             = "dev"
+    resource_groups = [{ instance = "core" }]
+    storage_accounts = [{
+      instance                = "logs001"
+      resource_group_instance = "core"
+      replication_type        = "Premium_LRS"
+    }]
+  }
+  expect_failures = [var.storage_accounts]
 }

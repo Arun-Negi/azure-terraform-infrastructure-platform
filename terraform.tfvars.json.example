@@ -3,6 +3,16 @@
   "org": "acme",
   "app": "platform",
   "env": "dev",
+  "storage_accounts": [
+    {
+      "instance": "logs001",
+      "resource_group_instance": "core",
+      "replication_type": "LRS",
+      "tags": {
+        "purpose": "diagnostics"
+      }
+    }
+  ],
   "resource_groups": [
     {
       "instance": "core",
@@ -13,15 +23,21 @@
       },
       "virtual_network": {
         "instance": "main",
-        "address_space": ["10.10.0.0/16"],
+        "address_space": [
+          "10.10.0.0/16"
+        ],
         "subnets": [
           {
             "instance": "app",
-            "address_prefixes": ["10.10.1.0/24"]
+            "address_prefixes": [
+              "10.10.1.0/24"
+            ]
           },
           {
             "instance": "data",
-            "address_prefixes": ["10.10.2.0/24"]
+            "address_prefixes": [
+              "10.10.2.0/24"
+            ]
           }
         ]
       }

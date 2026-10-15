@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/services/storage-account.schema.json",
+  "title": "Azure storage account schema",
+  "description": "Validation rules for a StorageV2 account with platform security defaults.",
+  "$defs": {
+    "storageAccount": {
+      "type": "object",
+      "title": "Storage account",
+      "description": "Creates a StorageV2 account in Central US with secure defaults.",
+      "additionalProperties": false,
+      "required": [
+        "instance",
+        "resource_group_instance"
+      ],
+      "properties": {
+        "instance": {
+          "$ref": "../common.schema.json#/$defs/instance",
+          "title": "Storage account instance",
+          "description": "Unique identifier. Generated Azure name removes separators and must fit 3-24 lowercase letters/digits."
+        },
+        "resource_group_instance": {
+          "type": "string",
+          "title": "Resource group instance",
+          "description": "Must match an instance declared in resource_groups.",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "examples": [
+            "core"
+          ]
+        },
+        "account_tier": {
+          "type": "string",
+          "title": "Performance tier",
+          "enum": [
+            "Standard"
+          ],
+          "default": "Standard"
+        },
+        "replication_type": {
+          "type": "string",
+          "title": "Redundancy",
+          "enum": [
+            "LRS",
+            "GRS",
+            "RAGRS",
+            "ZRS",
+            "GZRS",
+            "RAGZRS"
+          ],
+          "default": "LRS"
+        },
+        "min_tls_version": {
+          "type": "string",
+          "title": "Minimum TLS version",
+          "enum": [
+            "TLS1_2"
+          ],
+          "default": "TLS1_2"
+        },
+        "public_network_access_enabled": {
+          "type": "boolean",
+          "title": "Public network access",
+          "description": "Disabled by default; enable only with an approved exception.",
+          "default": false
+        },
+        "shared_access_key_enabled": {
+          "type": "boolean",
+          "title": "Shared key authentication",
+          "description": "Disabled by default; prefer Microsoft Entra ID authentication.",
+          "default": false
+        },
+        "tags": {
+          "type": "object",
+          "title": "Additional tags",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

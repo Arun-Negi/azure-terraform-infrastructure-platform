@@ -40,6 +40,7 @@ jobs:
       - name: Validate JSON input template and Azure Policy files
         run: |
           python -m json.tool terraform.tfvars.json.example > /dev/null
+          find schemas -name "*.schema.json" -print0 | xargs -0 -n1 python -m json.tool > /dev/null
           python -m json.tool policies/azure-policy/allowed-locations.json > /dev/null
           python -m json.tool policies/azure-policy/require-managed-by-tag.json > /dev/null
       - name: Initialize without backend

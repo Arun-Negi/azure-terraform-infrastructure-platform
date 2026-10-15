@@ -2,17 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/terraform-input.schema.json",
   "title": "Azure Terraform Infrastructure Input",
-  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length.",
+  "description": "Top-level JSON input contract. Each Azure service's fields and validation rules are maintained in its own schema under schemas/services/.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["subscription_id", "org", "app", "env", "resource_groups"],
+  "required": [
+    "subscription_id",
+    "org",
+    "app",
+    "env",
+    "resource_groups"
+  ],
   "properties": {
     "subscription_id": {
       "type": "string",
       "title": "Azure subscription ID",
       "description": "Replace the placeholder with your Azure subscription GUID.",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "examples": ["00000000-0000-0000-0000-000000000000"]
+      "examples": [
+        "00000000-0000-0000-0000-000000000000"
+      ]
     },
     "org": {
       "type": "string",
@@ -21,7 +29,10 @@
       "minLength": 2,
       "maxLength": 12,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["acme", "contoso"]
+      "examples": [
+        "acme",
+        "contoso"
+      ]
     },
     "app": {
       "type": "string",
@@ -30,97 +41,45 @@
       "minLength": 2,
       "maxLength": 16,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["platform", "payments"]
+      "examples": [
+        "platform",
+        "payments"
+      ]
     },
     "env": {
       "type": "string",
       "title": "Environment",
       "description": "Choose an approved environment code.",
-      "enum": ["dev", "test", "qa", "stage", "prod", "shared", "sandbox"],
-      "examples": ["dev", "prod"]
+      "enum": [
+        "dev",
+        "test",
+        "qa",
+        "stage",
+        "prod",
+        "shared",
+        "sandbox"
+      ],
+      "examples": [
+        "dev",
+        "prod"
+      ]
     },
     "resource_groups": {
       "type": "array",
       "title": "Resource groups",
       "description": "Add one object per resource group. Add or remove objects to control the number created.",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/resourceGroup" }
-    }
-  },
-  "$defs": {
-    "instance": {
-      "type": "string",
-      "title": "Resource instance",
-      "description": "1-40 lowercase letters/digits, optionally separated by single hyphens. Final name must fit the Azure limit.",
-      "minLength": 1,
-      "maxLength": 40,
-      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["core", "main", "app", "data", "001"]
-    },
-    "resourceGroup": {
-      "type": "object",
-      "title": "Resource group",
-      "description": "Generated name: {org}-{app}-{env}-rg-{instance}. Maximum 90 characters.",
-      "additionalProperties": false,
-      "required": ["instance"],
-      "properties": {
-        "instance": { "$ref": "#/$defs/instance", "title": "Resource-group instance" },
-        "tags": {
-          "type": "object",
-          "title": "Tags (optional)",
-          "description": "Optional Azure tags as string key/value pairs.",
-          "default": {},
-          "additionalProperties": { "type": "string" },
-          "examples": [{ "environment": "dev", "managed_by": "terraform" }]
-        },
-        "virtual_network": {
-          "type": "object",
-          "title": "Virtual network (optional)",
-          "description": "Include only if this resource group needs a VNet. Generated name limit: 64 characters.",
-          "additionalProperties": false,
-          "required": ["instance", "address_space"],
-          "properties": {
-            "instance": { "$ref": "#/$defs/instance", "title": "VNet instance" },
-            "address_space": {
-              "type": "array",
-              "title": "VNet address space",
-              "description": "One or more CIDR ranges, for example 10.10.0.0/16.",
-              "minItems": 1,
-              "items": {
-                "type": "string",
-                "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
-                "examples": ["10.10.0.0/16"]
-              }
-            },
-            "subnets": {
-              "type": "array",
-              "title": "Subnets (optional)",
-              "default": [],
-              "items": { "$ref": "#/$defs/subnet" }
-            }
-          }
-        }
+      "items": {
+        "$ref": "./services/resource-group.schema.json#/$defs/resourceGroup"
       }
     },
-    "subnet": {
-      "type": "object",
-      "title": "Subnet",
-      "description": "Generated name: {org}-{app}-{env}-snet-{instance}. Maximum 80 characters.",
-      "additionalProperties": false,
-      "required": ["instance", "address_prefixes"],
-      "properties": {
-        "instance": { "$ref": "#/$defs/instance", "title": "Subnet instance" },
-        "address_prefixes": {
-          "type": "array",
-          "title": "Subnet CIDR ranges",
-          "description": "Ensure each range fits inside the VNet and does not overlap another subnet.",
-          "minItems": 1,
-          "items": {
-            "type": "string",
-            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
-            "examples": ["10.10.1.0/24"]
-          }
-        }
+    "storage_accounts": {
+      "type": "array",
+      "title": "Storage accounts",
+      "description": "Optional storage accounts. Each references a resource group instance; names are compacted to meet Azure restrictions.",
+      "default": [],
+      "items": {
+        "$ref": "./services/storage-account.schema.json#/$defs/storageAccount"
       }
     }
   }

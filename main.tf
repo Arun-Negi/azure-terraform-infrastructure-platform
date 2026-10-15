@@ -35,3 +35,19 @@ resource "azurerm_subnet" "this" {
   virtual_network_name = azurerm_virtual_network.this[each.value.rg_key].name
   address_prefixes     = each.value.address_prefixes
 }
+
+
+module "storage_account" {
+  for_each = local.storage_account_entries
+  source   = "./modules/storage_account"
+
+  name                            = each.value.name
+  resource_group_name             = azurerm_resource_group.this[each.value.resource_group_instance].name
+  location                        = local.azure_location
+  account_tier                    = each.value.account_tier
+  replication_type                = each.value.replication_type
+  min_tls_version                 = each.value.min_tls_version
+  public_network_access_enabled   = each.value.public_network_access_enabled
+  shared_access_key_enabled       = each.value.shared_access_key_enabled
+  tags                            = merge(try(local.resource_groups[each.value.resource_group_instance].tags, {}), each.value.tags)
+}

@@ -1,6 +1,6 @@
 # Azure Terraform Infrastructure Platform
 
-Deploy Azure resource groups, optional virtual networks, and subnets by editing **one JSON file**. End users do not need to edit Terraform variables or HCL.
+Deploy Azure resource groups, optional virtual networks, subnets, and storage accounts by editing **one JSON file**. End users do not need to edit Terraform variables or HCL.
 
 ## Configure one JSON file
 
@@ -18,6 +18,13 @@ Edit `terraform.tfvars.json`. The shared naming settings are simple top-level fi
   "org": "acme",
   "app": "platform",
   "env": "dev",
+  "storage_accounts": [
+    {
+      "instance": "logs001",
+      "resource_group_instance": "core",
+      "replication_type": "LRS"
+    }
+  ],
   "resource_groups": [
     {
       "instance": "core",
@@ -37,7 +44,7 @@ Edit `terraform.tfvars.json`. The shared naming settings are simple top-level fi
 }
 ```
 
-This example creates two resource groups, one VNet, and two subnets. Tags are optional; add a `tags` object only when needed. Add or remove objects in `resource_groups` to control the number of resource groups.
+This example creates two resource groups, one storage account, one VNet, and two subnets. Tags are optional; add a `tags` object only when needed. Add or remove objects in `resource_groups` to control the number of resource groups.
 
 ### Naming convention
 
@@ -53,12 +60,12 @@ The example generates names such as `acme-platform-dev-rg-core`, `acme-platform-
 - `app`: 2-16 lowercase letters/digits, optionally separated by single hyphens.
 - `env`: one of `dev`, `test`, `qa`, `stage`, `prod`, `shared`, or `sandbox`.
 - `instance`: user-controlled identifier for each resource group, VNet, and subnet (for example, `core`, `main`, `app`, or `data`).
-- `type` is platform-controlled: `rg`, `vnet`, or `snet`; users cannot override it.
+- `type` is platform-controlled: `rg`, `vnet`, `snet`, or `st`; users cannot override it. Storage accounts use a compacted name without hyphens because Azure requires 3-24 lowercase letters/digits and globally unique names.
 - `virtual_network` is optional. If included, `address_space` is required; `subnets` are optional.
 - `address_prefixes` contains subnet CIDR ranges.
 - Region is fixed to Central US (`centralus`); users cannot override it in JSON.
 
-The JSON Schema provides editor validation for fields and component lengths. The naming module validates the complete generated name against Azure limits before planning: resource groups 90 characters, VNets 64, and subnets 80. Shorten `org`, `app`, `env`, or the relevant `instance` if the final name is too long.
+Storage accounts default to Standard/LRS, TLS 1.2, HTTPS-only traffic, infrastructure encryption, disabled public network access, disabled shared-key authentication, and disabled anonymous blob access. Public access and shared-key authentication can be enabled in JSON only with an approved exception. Azure validates global name availability during deployment.\n\nThe JSON Schema provides editor validation for fields and component lengths. The naming module validates the complete generated name against Azure limits before planning: resource groups 90 characters, VNets 64, and subnets 80. Shorten `org`, `app`, `env`, or the relevant `instance` if the final name is too long.
 
 ## VS Code JSON IntelliSense
 
