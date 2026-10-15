@@ -20,5 +20,6 @@ provider "azurerm" {
     "Microsoft.Resources",
     "Microsoft.Network",
     "Microsoft.Storage",
+    "Microsoft.Storage",
   ]
 }
