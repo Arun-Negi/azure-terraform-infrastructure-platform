@@ -38,6 +38,7 @@ variable "resources" {
     instance        = string
     max_length      = number
     allowed_pattern = string
+    compact_name    = optional(bool, false)
   }))
   nullable = false
 
