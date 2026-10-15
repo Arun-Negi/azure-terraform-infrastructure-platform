@@ -33,3 +33,15 @@ output "generated_resource_names" {
   description = "All validated generated names, keyed by resource type and instance."
   value       = module.naming.names
 }
+
+
+output "storage_accounts" {
+  description = "Created storage accounts keyed by their instance identifiers."
+  value = {
+    for key, account in module.storage_account : key => {
+      id                    = account.id
+      name                  = account.name
+      primary_blob_endpoint = account.primary_blob_endpoint
+    }
+  }
+}
