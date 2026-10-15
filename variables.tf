@@ -102,3 +102,46 @@ variable "resource_groups" {
     error_message = "Check VNet/subnet instance values (1-40 lowercase letters/digits with single hyphens), unique subnet instances, and valid non-empty CIDR ranges."
   }
 }
+
+
+variable "storage_accounts" {
+  description = "Optional storage accounts. Each account references a resource-group instance and uses platform-approved secure defaults."
+  type = list(object({
+    instance                      = string
+    resource_group_instance       = string
+    account_tier                  = optional(string, "Standard")
+    replication_type              = optional(string, "LRS")
+    min_tls_version               = optional(string, "TLS1_2")
+    public_network_access_enabled = optional(bool, false)
+    shared_access_key_enabled     = optional(bool, false)
+    tags                          = optional(map(string), {})
+  }))
+  default  = []
+  nullable = false
+
+  validation {
+    condition = length(distinct([for account in var.storage_accounts : lower(account.instance)])) == length(var.storage_accounts) &&
+      alltrue([for account in var.storage_accounts :
+        length(account.instance) >= 1 &&
+        length(account.instance) <= 40 &&
+        can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", account.instance))
+      ])
+    error_message = "Storage account instances must be unique and use 1-40 lowercase letters/digits with optional single hyphens."
+  }
+
+  validation {
+    condition = alltrue([for account in var.storage_accounts :
+      contains(["Standard"], account.account_tier) &&
+      contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], account.replication_type) &&
+      account.min_tls_version == "TLS1_2"
+    ])
+    error_message = "Storage accounts support Standard tier, approved replication types LRS/GRS/RAGRS/ZRS/GZRS/RAGZRS, and TLS1_2 only."
+  }
+
+  validation {
+    condition = alltrue([for account in var.storage_accounts :
+      contains([for rg in var.resource_groups : rg.instance], account.resource_group_instance)
+    ])
+    error_message = "Each storage account resource_group_instance must match an instance declared in resource_groups."
+  }
+}
