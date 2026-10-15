@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/terraform-input.schema.json",
   "title": "Azure Terraform Infrastructure Input",
-  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length. Storage account names use Azure's compact lowercase alphanumeric naming rule (3-24 characters). Storage account names use Azure's compact lowercase alphanumeric naming rule (3-24 characters).",
+  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length. Storage account names use Azure's compact lowercase alphanumeric naming rule (3-24 characters).",
   "type": "object",
   "additionalProperties": false,
   "required": [
