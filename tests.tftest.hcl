@@ -105,7 +105,7 @@ run "rejects_generated_vnet_name_over_64_characters" {
     ]
   }
 
-  expect_failures = [module.naming.terraform_data.validate_names["vnet-core"]]
+  expect_failures = [output.generated_resource_names]
 }
 
 
