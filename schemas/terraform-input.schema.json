@@ -2,17 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/Arun-Negi/azure-terraform-infrastructure-platform/main/schemas/terraform-input.schema.json",
   "title": "Azure Terraform Infrastructure Input",
-  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length.",
+  "description": "Simple JSON input. Resource names use {org}-{app}-{env}-{type}-{instance}; Terraform validates each final Azure name length. Storage account names use Azure's compact lowercase alphanumeric naming rule (3-24 characters).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["subscription_id", "org", "app", "env", "resource_groups"],
+  "required": [
+    "subscription_id",
+    "org",
+    "app",
+    "env",
+    "resource_groups"
+  ],
   "properties": {
     "subscription_id": {
       "type": "string",
       "title": "Azure subscription ID",
       "description": "Replace the placeholder with your Azure subscription GUID.",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "examples": ["00000000-0000-0000-0000-000000000000"]
+      "examples": [
+        "00000000-0000-0000-0000-000000000000"
+      ]
     },
     "org": {
       "type": "string",
@@ -21,7 +29,10 @@
       "minLength": 2,
       "maxLength": 12,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["acme", "contoso"]
+      "examples": [
+        "acme",
+        "contoso"
+      ]
     },
     "app": {
       "type": "string",
@@ -30,21 +41,46 @@
       "minLength": 2,
       "maxLength": 16,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["platform", "payments"]
+      "examples": [
+        "platform",
+        "payments"
+      ]
     },
     "env": {
       "type": "string",
       "title": "Environment",
       "description": "Choose an approved environment code.",
-      "enum": ["dev", "test", "qa", "stage", "prod", "shared", "sandbox"],
-      "examples": ["dev", "prod"]
+      "enum": [
+        "dev",
+        "test",
+        "qa",
+        "stage",
+        "prod",
+        "shared",
+        "sandbox"
+      ],
+      "examples": [
+        "dev",
+        "prod"
+      ]
     },
     "resource_groups": {
       "type": "array",
       "title": "Resource groups",
       "description": "Add one object per resource group. Add or remove objects to control the number created.",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/resourceGroup" }
+      "items": {
+        "$ref": "#/$defs/resourceGroup"
+      }
+    },
+    "storage_accounts": {
+      "type": "array",
+      "title": "Storage accounts",
+      "description": "Optional storage accounts. Each references a resource group instance; names are compacted to meet Azure restrictions.",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/storageAccount"
+      }
     }
   },
   "$defs": {
@@ -55,32 +91,56 @@
       "minLength": 1,
       "maxLength": 40,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "examples": ["core", "main", "app", "data", "001"]
+      "examples": [
+        "core",
+        "main",
+        "app",
+        "data",
+        "001"
+      ]
     },
     "resourceGroup": {
       "type": "object",
       "title": "Resource group",
       "description": "Generated name: {org}-{app}-{env}-rg-{instance}. Maximum 90 characters.",
       "additionalProperties": false,
-      "required": ["instance"],
+      "required": [
+        "instance"
+      ],
       "properties": {
-        "instance": { "$ref": "#/$defs/instance", "title": "Resource-group instance" },
+        "instance": {
+          "$ref": "#/$defs/instance",
+          "title": "Resource-group instance"
+        },
         "tags": {
           "type": "object",
           "title": "Tags (optional)",
           "description": "Optional Azure tags as string key/value pairs.",
           "default": {},
-          "additionalProperties": { "type": "string" },
-          "examples": [{ "environment": "dev", "managed_by": "terraform" }]
+          "additionalProperties": {
+            "type": "string"
+          },
+          "examples": [
+            {
+              "environment": "dev",
+              "managed_by": "terraform"
+            }
+          ]
         },
         "virtual_network": {
           "type": "object",
           "title": "Virtual network (optional)",
           "description": "Include only if this resource group needs a VNet. Generated name limit: 64 characters.",
           "additionalProperties": false,
-          "required": ["instance", "address_space"],
+          "required": [
+            "instance",
+            "address_space"
+          ],
           "properties": {
-            "instance": { "$ref": "#/$defs/instance", "title": "VNet instance" },
+            "instance": {
+              "$ref": "#/$defs/instance",
+              "title": "VNet instance"
+            },
             "address_space": {
               "type": "array",
               "title": "VNet address space",
@@ -89,14 +149,18 @@
               "items": {
                 "type": "string",
                 "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
-                "examples": ["10.10.0.0/16"]
+                "examples": [
+                  "10.10.0.0/16"
+                ]
               }
             },
             "subnets": {
               "type": "array",
               "title": "Subnets (optional)",
               "default": [],
-              "items": { "$ref": "#/$defs/subnet" }
+              "items": {
+                "$ref": "#/$defs/subnet"
+              }
             }
           }
         }
@@ -107,9 +171,15 @@
       "title": "Subnet",
       "description": "Generated name: {org}-{app}-{env}-snet-{instance}. Maximum 80 characters.",
       "additionalProperties": false,
-      "required": ["instance", "address_prefixes"],
+      "required": [
+        "instance",
+        "address_prefixes"
+      ],
       "properties": {
-        "instance": { "$ref": "#/$defs/instance", "title": "Subnet instance" },
+        "instance": {
+          "$ref": "#/$defs/instance",
+          "title": "Subnet instance"
+        },
         "address_prefixes": {
           "type": "array",
           "title": "Subnet CIDR ranges",
@@ -118,7 +188,85 @@
           "items": {
             "type": "string",
             "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}/([0-9]|[12][0-9]|3[0-2])$",
-            "examples": ["10.10.1.0/24"]
+            "examples": [
+              "10.10.1.0/24"
+            ]
+          }
+        }
+      }
+    },
+    "storageAccount": {
+      "type": "object",
+      "title": "Storage account",
+      "description": "Creates a StorageV2 account in Central US with secure defaults.",
+      "additionalProperties": false,
+      "required": [
+        "instance",
+        "resource_group_instance"
+      ],
+      "properties": {
+        "instance": {
+          "$ref": "#/$defs/instance",
+          "title": "Storage account instance",
+          "description": "Unique identifier. Generated Azure name removes separators and must fit 3-24 lowercase letters/digits."
+        },
+        "resource_group_instance": {
+          "type": "string",
+          "title": "Resource group instance",
+          "description": "Must match an instance declared in resource_groups.",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "examples": [
+            "core"
+          ]
+        },
+        "account_tier": {
+          "type": "string",
+          "title": "Performance tier",
+          "enum": [
+            "Standard"
+          ],
+          "default": "Standard"
+        },
+        "replication_type": {
+          "type": "string",
+          "title": "Redundancy",
+          "enum": [
+            "LRS",
+            "GRS",
+            "RAGRS",
+            "ZRS",
+            "GZRS",
+            "RAGZRS"
+          ],
+          "default": "LRS"
+        },
+        "min_tls_version": {
+          "type": "string",
+          "title": "Minimum TLS version",
+          "enum": [
+            "TLS1_2"
+          ],
+          "default": "TLS1_2"
+        },
+        "public_network_access_enabled": {
+          "type": "boolean",
+          "title": "Public network access",
+          "description": "Disabled by default; enable only with an approved exception.",
+          "default": false
+        },
+        "shared_access_key_enabled": {
+          "type": "boolean",
+          "title": "Shared key authentication",
+          "description": "Disabled by default; prefer Microsoft Entra ID authentication.",
+          "default": false
+        },
+        "tags": {
+          "type": "object",
+          "title": "Additional tags",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }
