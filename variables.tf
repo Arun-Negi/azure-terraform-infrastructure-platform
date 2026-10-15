@@ -101,6 +101,20 @@ variable "resource_groups" {
     ])
     error_message = "Check VNet/subnet instance values (1-40 lowercase letters/digits with single hyphens), unique subnet instances, and valid non-empty CIDR ranges."
   }
+  validation {
+    condition = alltrue([
+      for rg in var.resource_groups :
+      length("${var.org}-${var.app}-${var.env}-rg-${rg.instance}") <= 90 &&
+      (rg.virtual_network == null ? true :
+        length("${var.org}-${var.app}-${var.env}-vnet-${rg.virtual_network.instance}") <= 64 &&
+        alltrue([
+          for subnet in rg.virtual_network.subnets :
+          length("${var.org}-${var.app}-${var.env}-snet-${subnet.instance}") <= 80
+        ])
+      )
+    ])
+    error_message = "A generated resource group, VNet, or subnet name exceeds its Azure length limit (90, 64, or 80 characters). Shorten org, app, env, or the resource instance."
+  }
 }
 
 
