@@ -92,13 +92,13 @@ run "rejects_generated_vnet_name_over_64_characters" {
   variables {
     subscription_id = "00000000-0000-0000-0000-000000000000"
     org             = "acme"
-    app             = "averylongapplicationname"
+    app             = "applicationname"
     env             = "prod"
     resource_groups = [
       {
         instance = "core"
         virtual_network = {
-          instance      = "averylongnetworkinstancename"
+          instance      = "averylongnetworkinstanceidentifier123456"
           address_space = ["10.40.0.0/16"]
         }
       }
