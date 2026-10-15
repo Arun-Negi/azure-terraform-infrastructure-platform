@@ -21,7 +21,17 @@ locals {
         instance        = rg.virtual_network.instance
         max_length      = 64
         allowed_pattern = local.allowed_generated_name_pattern
+        compact_name    = false
       } if rg.virtual_network != null
+    },
+    {
+      for account in var.storage_accounts : "st-${account.instance}" => {
+        type_code       = "st"
+        instance        = account.instance
+        max_length      = 24
+        allowed_pattern = "^[a-z0-9]{3,24}$"
+        compact_name    = true
+      }
     },
     {
       for item in flatten([
@@ -36,6 +46,7 @@ locals {
         instance        = item.instance
         max_length      = 80
         allowed_pattern = local.allowed_generated_name_pattern
+        compact_name    = false
       }
     }
   )
@@ -60,5 +71,11 @@ locals {
 
   subnets = {
     for subnet in local.subnet_entries : subnet.key => subnet
+  }
+
+  storage_account_entries = {
+    for account in var.storage_accounts : account.instance => merge(account, {
+      name = module.naming.names["st-${account.instance}"]
+    })
   }
 }
