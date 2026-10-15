@@ -46,14 +46,3 @@ output "storage_accounts" {
   }
 }
 
-
-output "storage_accounts" {
-  description = "Created storage accounts keyed by their instance identifiers."
-  value = {
-    for key, account in module.storage_account : key => {
-      id                    = account.id
-      name                  = account.name
-      primary_blob_endpoint = account.primary_blob_endpoint
-    }
-  }
-}
