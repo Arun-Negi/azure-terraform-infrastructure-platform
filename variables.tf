@@ -120,12 +120,10 @@ variable "storage_accounts" {
   nullable = false
 
   validation {
-    condition = length(distinct([for account in var.storage_accounts : lower(account.instance)])) == length(var.storage_accounts) &&
-      alltrue([for account in var.storage_accounts :
-        length(account.instance) >= 1 &&
-        length(account.instance) <= 40 &&
-        can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", account.instance))
-      ])
+    condition = (
+      length(distinct([for account in var.storage_accounts : lower(account.instance)])) == length(var.storage_accounts) &&
+      alltrue([for account in var.storage_accounts : length(account.instance) >= 1 && length(account.instance) <= 40 && can(regex("^[a-z0-9]+(-[a-z0-9]+)*$", account.instance))])
+    )
     error_message = "Storage account instances must be unique and use 1-40 lowercase letters/digits with optional single hyphens."
   }
 
