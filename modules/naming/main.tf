@@ -1,7 +1,7 @@
 locals {
   generated_names = {
     for key, resource in var.resources :
-    key => lower("${var.org}-${var.app}-${var.env}-${resource.type_code}-${resource.instance}")
+    key => lower(resource.compact_name ? replace("${var.org}${var.app}${var.env}${resource.type_code}${resource.instance}", "-", "") : "${var.org}-${var.app}-${var.env}-${resource.type_code}-${resource.instance}")
   }
 }
 
