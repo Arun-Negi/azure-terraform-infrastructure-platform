@@ -1,6 +1,0 @@
-{
-  "subnets": [
-    { "instance": "app", "address_prefixes": ["10.20.1.0/24"] },
-    { "instance": "data", "address_prefixes": ["10.20.2.0/24"] }
-  ]
-}
