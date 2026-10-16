@@ -9,7 +9,7 @@
     "org": { "$ref": "../terraform-input.schema.json#/properties/org" },
     "app": { "$ref": "../terraform-input.schema.json#/properties/app" },
     "env": { "$ref": "../terraform-input.schema.json#/properties/env" },
-    "instance": { "$ref": "../services/common.schema.json#/$defs/instance", "title": "Resource Group instance" },
+    "instance": { "$ref": "../common.schema.json#/$defs/instance", "title": "Resource Group instance" },
     "tags": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} }
   }
 }
