@@ -2,17 +2,14 @@
 
 ## Layout
 
-Each independently managed logical Resource Group has its own directory:
+Resource Group input folders are **not pre-populated or checked in as examples**. The Infrastructure Portal creates them only when a valid configuration is submitted and a pull request is opened. A resulting folder has this shape:
 
-- resource-groups/rg-dev-network/inputjson/resource-group.json
-- resource-groups/rg-dev-network/inputjson/virtual-network.json
-- resource-groups/rg-dev-network/inputjson/subnet.json
-- resource-groups/rg-dev-storage/inputjson/resource-group.json
-- resource-groups/rg-dev-storage/inputjson/storage-account.json
-- resource-groups/rg-prod-app/inputjson/resource-group.json
-- resource-groups/rg-prod-app/inputjson/virtual-network.json
-- resource-groups/rg-prod-app/inputjson/storage-account.json
+- `resource-groups/rg-<instance>/inputjson/resource-group.json` (required)
+- `resource-groups/rg-<instance>/inputjson/virtual-network.json` (optional)
+- `resource-groups/rg-<instance>/inputjson/subnet.json` (optional)
+- `resource-groups/rg-<instance>/inputjson/storage-account.json` (optional)
 
+Reusable modules stay under `modules/`. Service schemas stay under `schemas/services/`, and per-file input contracts stay under `schemas/configuration/`. Do not copy modules or schemas into Resource Group folders.
 Reusable modules stay under modules/. Existing service schemas stay under schemas/services/. The per-file input contracts are under schemas/configuration/. Do not copy modules or schemas into Resource Group folders.
 
 ## File contracts
@@ -43,8 +40,7 @@ The assembler validates each file and converts it to the current Terraform root 
 Use Python 3.12+ and Terraform 1.16.6:
 
     python -m pip install -r requirements-validation.txt
-    python scripts/assemble_resource_group.py --input-dir resource-groups/rg-dev-network/inputjson --output /tmp/rg-dev-network.tfvars.json
-    python scripts/assemble_resource_group.py --input-dir resource-groups/rg-dev-storage/inputjson --output /tmp/rg-dev-storage.tfvars.json
+    python scripts/assemble_resource_group.py --input-dir resource-groups/rg-workload/inputjson --output /tmp/rg-workload.tfvars.json
     terraform fmt -check -recursive
     terraform init -backend=false
     terraform validate
