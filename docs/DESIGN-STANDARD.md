@@ -292,7 +292,7 @@ Resource deletion must be deliberate. Document whether deletion is reversible, w
 
 ## 14. Current implementation vs. planned capability
 
-The repository implements JSON-driven resource groups, optional virtual networks and subnets, a shared naming module for `{org}-{app}-{env}-{type}-{instance}`, resource-specific final-name length checks, a VS Code JSON Schema, CIDR validation, tests, and example Azure Policy definitions. Other service modules, full multi-environment deployment automation, remote state, OIDC deployment, and policy assignments must be treated as future work until implemented and verified.
+The repository implements JSON-driven resource groups, optional virtual networks and subnets, Storage Accounts, a shared naming module for `{org}-{app}-{env}-{type}-{instance}`, resource-specific final-name length checks, service schemas, CIDR validation, tests, and example Azure Policy definitions. The Resource Group-scoped input assembler and plan/apply workflow are being introduced under `resource-groups/`; remote backend values, Azure OIDC federation, protected-environment reviewers, and migration of any existing state must be configured and verified by an operator before apply is enabled. Policy definitions remain examples until assigned.
 
 Do not describe a restriction as “enforced” solely because it appears in this document or a schema. Confirm the corresponding Terraform validation, automated test, Azure Policy assignment, RBAC control, or deployment gate actually exists.
 
