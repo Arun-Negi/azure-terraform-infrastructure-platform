@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Virtual Network input file",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["instance", "address_space"],
+  "properties": {
+    "instance": { "$ref": "../services/common.schema.json#/$defs/instance" },
+    "address_space": { "type": "array", "minItems": 1, "items": { "type": "string", "format": "ipv4" } }
+  }
+}
