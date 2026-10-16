@@ -6,6 +6,22 @@
         "terraform.tfvars.json.example"
       ],
       "url": "./schemas/terraform-input.schema.json"
+    },
+    {
+      "fileMatch": ["resource-groups/**/inputjson/resource-group.json"],
+      "url": "./schemas/configuration/resource-group.schema.json"
+    },
+    {
+      "fileMatch": ["resource-groups/**/inputjson/virtual-network.json"],
+      "url": "./schemas/configuration/virtual-network.schema.json"
+    },
+    {
+      "fileMatch": ["resource-groups/**/inputjson/subnet.json"],
+      "url": "./schemas/configuration/subnet.schema.json"
+    },
+    {
+      "fileMatch": ["resource-groups/**/inputjson/storage-account.json"],
+      "url": "./schemas/configuration/storage-account.schema.json"
     }
   ]
 }

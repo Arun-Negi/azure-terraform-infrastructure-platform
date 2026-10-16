@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Storage Account input file",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["storage_accounts"],
+  "properties": {
+    "storage_accounts": {
+      "type": "array",
+      "items": { "$ref": "../services/storage-account.schema.json#/$defs/storageAccount" }
+    }
+  }
+}

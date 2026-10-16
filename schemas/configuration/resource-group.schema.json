@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resource Group input file",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subscription_id", "org", "app", "env", "instance"],
+  "properties": {
+    "subscription_id": { "$ref": "../terraform-input.schema.json#/properties/subscription_id" },
+    "org": { "$ref": "../terraform-input.schema.json#/properties/org" },
+    "app": { "$ref": "../terraform-input.schema.json#/properties/app" },
+    "env": { "$ref": "../terraform-input.schema.json#/properties/env" },
+    "instance": { "$ref": "../common.schema.json#/$defs/instance", "title": "Resource Group instance" },
+    "tags": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} }
+  }
+}

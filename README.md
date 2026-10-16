@@ -1,8 +1,8 @@
 # Azure Terraform Infrastructure Platform
 
-Deploy Azure resource groups, optional virtual networks, subnets, and storage accounts by editing **one JSON file**. End users do not need to edit Terraform variables or HCL.
+Deploy infrastructure through Resource Group-scoped JSON inputs. The Infrastructure Portal creates each `resource-groups/<folder>/inputjson/` folder from submitted UI values when it opens a pull request; no sample Resource Group input files are committed. Reusable Terraform modules, naming rules, and service schemas remain centralized. See [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) for the current structure and isolated workflow.
 
-## Configure one JSON file
+## Legacy single-file input (backward-compatibility reference)
 
 Copy the example to the automatically loaded Terraform input filename:
 
@@ -171,3 +171,7 @@ The `policies/azure-policy/` directory contains custom policy definitions for al
 - Pin GitHub Actions to immutable commit SHAs.
 - Test in a non-production subscription and inspect every plan; resource removals may destroy infrastructure.
 - Azure resources can incur charges. Confirm the subscription and plan before applying or destroying.
+
+## Resource Group–based configuration and independent deployments
+
+Per-Resource Group input files are created by the Infrastructure Portal PR workflow under `resource-groups/<folder>/inputjson/`; the repository does not ship pre-populated Resource Group configurations. The deployment workflow validates and plans one selected folder at a time and uses a folder-specific Azure Storage state key. Read [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) before using the workflow, especially the state-migration warning. The apply stage remains disabled until the operator explicitly enables it after migrating and verifying state.
