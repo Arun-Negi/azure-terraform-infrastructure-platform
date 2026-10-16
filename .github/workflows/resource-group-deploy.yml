@@ -139,7 +139,7 @@ jobs:
           terraform plan -input=false -no-color -detailed-exitcode -out=tfplan -var-file=terraform.tfvars.json
           code=$?
           set -e
-          if [[ "$code" -eq 1 ]]; then exit 1; fi
+          if [[ "$code" -ne 0 && "$code" -ne 2 ]]; then exit "$code"; fi
           terraform show -no-color tfplan | tee "$RUNNER_TEMP/plan.txt"
           {
             echo "Resource Group plan: ${{ inputs.resource_group }}"
