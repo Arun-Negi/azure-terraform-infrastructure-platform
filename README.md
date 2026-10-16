@@ -1,6 +1,6 @@
 # Azure Terraform Infrastructure Platform
 
-Deploy infrastructure through Resource Group-scoped JSON inputs. Each independently managed Resource Group has its own folder under `resource-groups/<folder>/inputjson/`; reusable Terraform modules, naming rules, and service schemas remain centralized. See [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) for the current structure and isolated workflow.
+Deploy infrastructure through Resource Group-scoped JSON inputs. The Infrastructure Portal creates each `resource-groups/<folder>/inputjson/` folder from submitted UI values when it opens a pull request; no sample Resource Group input files are committed. Reusable Terraform modules, naming rules, and service schemas remain centralized. See [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) for the current structure and isolated workflow.
 
 ## Legacy single-file input (backward-compatibility reference)
 
@@ -174,4 +174,4 @@ The `policies/azure-policy/` directory contains custom policy definitions for al
 
 ## Resource Group–based configuration and independent deployments
 
-New per-Resource Group inputs are available under `resource-groups/<folder>/inputjson/`. The deployment workflow validates and plans one selected folder at a time and uses a folder-specific Azure Storage state key. Read [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) before using the workflow, especially the state-migration warning. The apply stage remains disabled until the operator explicitly enables it after migrating and verifying state.
+Per-Resource Group input files are created by the Infrastructure Portal PR workflow under `resource-groups/<folder>/inputjson/`; the repository does not ship pre-populated Resource Group configurations. The deployment workflow validates and plans one selected folder at a time and uses a folder-specific Azure Storage state key. Read [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) before using the workflow, especially the state-migration warning. The apply stage remains disabled until the operator explicitly enables it after migrating and verifying state.
