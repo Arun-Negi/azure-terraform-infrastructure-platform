@@ -36,7 +36,9 @@ def validate_schema(name: str, data: dict, source: Path) -> None:
         raise ValueError("Install validation dependencies with: python -m pip install -r requirements-validation.txt") from exc
     schema_path = SCHEMAS / name
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(data), key=lambda e: list(map(str, e.path)))
+    resolver = jsonschema.RefResolver(base_uri=schema_path.as_uri(), referrer=schema)
+    validator = jsonschema.Draft202012Validator(schema, resolver=resolver, format_checker=jsonschema.FormatChecker())
+    errors = sorted(validator.iter_errors(data), key=lambda e: list(map(str, e.path)))
     if errors:
         detail = "; ".join(f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors)
         raise ValueError(f"{source}: schema validation failed: {detail}")
