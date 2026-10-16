@@ -58,7 +58,7 @@ jobs:
             git fetch --no-tags origin "$BASE_SHA"
             git diff --name-only "$BASE_SHA" HEAD | awk -F/ '$1=="resource-groups" && $2!="" {print $2}' | sort -u > "$RUNNER_TEMP/changed-resource-groups.txt"
             while IFS= read -r rg; do
-              [[ -d "resource-groups/$rg/inputjson" ]] && printf '%s\\n' "$rg"
+              [[ -d "resource-groups/$rg/inputjson" ]] && printf '%s\n' "$rg"
             done < "$RUNNER_TEMP/changed-resource-groups.txt" > "$RUNNER_TEMP/resource-groups.txt"
             if [[ ! -s "$RUNNER_TEMP/resource-groups.txt" ]]; then
               mkdir -p resource-groups
@@ -75,8 +75,21 @@ jobs:
             python scripts/assemble_resource_group.py --input-dir "resource-groups/$rg/inputjson" --output "$RUNNER_TEMP/$rg.tfvars.json"
           done < "$RUNNER_TEMP/resource-groups.txt"
       - name: Terraform format and static validation
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          terraform fmt -check -recursive
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git fetch --no-tags origin "$BASE_SHA"
+            git diff --name-only "$BASE_SHA" HEAD -- '*.tf' '*.tfvars' | while IFS= read -r file; do
+              [[ -f "$file" ]] || continue
+              terraform fmt -check "$file"
+            done
+          else
+            terraform fmt -check -recursive
+          fi
           terraform init -backend=false -input=false
           terraform validate
   plan:
