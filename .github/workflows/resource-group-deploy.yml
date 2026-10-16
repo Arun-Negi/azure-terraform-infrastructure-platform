@@ -1,0 +1,190 @@
+name: Resource Group isolated plan and apply
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group:
+        description: "Folder under resource-groups (for example rg-dev-network)"
+        required: true
+        type: string
+      apply:
+        description: "Apply the reviewed plan after protected environment approval"
+        required: true
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - "resource-groups/**"
+      - "main.tf"
+      - "locals.tf"
+      - "variables.tf"
+      - "modules/**"
+      - "schemas/**"
+      - "scripts/assemble_resource_group.py"
+      - ".github/workflows/resource-group-deploy.yml"
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: terraform-${{ inputs.resource_group || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Validate selected / changed Resource Groups
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install JSON Schema validator
+        run: python -m pip install -r requirements-validation.txt
+      - name: Select configurations
+        shell: bash
+        env:
+          REQUESTED_RG: ${{ inputs.resource_group }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$REQUESTED_RG" =~ ^rg-[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "Invalid folder name: $REQUESTED_RG"; exit 1; }
+            [[ -d "resource-groups/$REQUESTED_RG/inputjson" ]] || { echo "No inputjson folder for $REQUESTED_RG"; exit 1; }
+            printf '%s\n' "$REQUESTED_RG" > "$RUNNER_TEMP/resource-groups.txt"
+          else
+            git fetch --no-tags origin "$BASE_SHA"
+            git diff --name-only "$BASE_SHA"...HEAD | awk -F/ '$1=="resource-groups" && $2!="" {print $2}' | sort -u > "$RUNNER_TEMP/resource-groups.txt"
+            if [[ ! -s "$RUNNER_TEMP/resource-groups.txt" ]]; then
+              find resource-groups -mindepth 2 -maxdepth 2 -type d -name inputjson -printf '%h\n' | sed 's#^resource-groups/##' | sort -u > "$RUNNER_TEMP/resource-groups.txt"
+            fi
+          fi
+          cat "$RUNNER_TEMP/resource-groups.txt"
+      - name: Validate JSON schemas and cross-file references
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r rg; do
+            [[ -n "$rg" ]] || continue
+            python scripts/assemble_resource_group.py --input-dir "resource-groups/$rg/inputjson" --output "$RUNNER_TEMP/$rg.tfvars.json"
+          done < "$RUNNER_TEMP/resource-groups.txt"
+      - name: Terraform format and static validation
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
+  plan:
+    name: Plan selected Resource Group
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-validation.txt
+      - name: Generate selected Resource Group variables
+        env:
+          REQUESTED_RG: ${{ inputs.resource_group }}
+        run: |
+          python scripts/assemble_resource_group.py --input-dir "resource-groups/$REQUESTED_RG/inputjson" --output "$RUNNER_TEMP/selected.tfvars.json"
+          cp "$RUNNER_TEMP/selected.tfvars.json" terraform.tfvars.json
+      - name: Configure isolated Azure Storage backend
+        shell: bash
+        env:
+          TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
+          TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+          TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+        run: |
+          set -euo pipefail
+          for key in TF_STATE_RESOURCE_GROUP TF_STATE_STORAGE_ACCOUNT TF_STATE_CONTAINER ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID; do
+            [[ -n "${!key:-}" ]] || { echo "Required GitHub variable/secret $key is not configured"; exit 1; }
+          done
+          cat > backend.generated.tf <<'EOF'
+          terraform { backend "azurerm" {} }
+          EOF
+          terraform init -input=false -reconfigure \
+            -backend-config="resource_group_name=$TF_STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$TF_STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=$TF_STATE_CONTAINER" \
+            -backend-config="key=resource-groups/${{ inputs.resource_group }}/terraform.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true" \
+            -backend-config="client_id=$ARM_CLIENT_ID" \
+            -backend-config="tenant_id=$ARM_TENANT_ID" \
+            -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
+      - name: Terraform plan
+        shell: bash
+        run: |
+          set +e
+          terraform plan -input=false -no-color -detailed-exitcode -out=tfplan -var-file=terraform.tfvars.json
+          code=$?
+          set -e
+          if [[ "$code" -eq 1 ]]; then exit 1; fi
+          terraform show -no-color tfplan | tee "$RUNNER_TEMP/plan.txt"
+          {
+            echo "Resource Group plan: ${{ inputs.resource_group }}"
+            cat "$RUNNER_TEMP/plan.txt"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ inputs.resource_group }}-${{ github.run_id }}
+          path: |
+            tfplan
+            terraform.tfvars.json
+            backend.generated.tf
+          retention-days: 1
+  apply:
+    name: Apply approved Resource Group plan
+    if: github.event_name == 'workflow_dispatch' && inputs.apply == true && github.ref == 'refs/heads/main' && vars.ENABLE_ISOLATED_APPLY == 'true'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: azure-apply
+    concurrency:
+      group: terraform-${{ inputs.resource_group }}
+      cancel-in-progress: false
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ inputs.resource_group }}-${{ github.run_id }}
+      - name: Initialize the same isolated state
+        env:
+          TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
+          TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+          TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+        run: |
+          set -euo pipefail
+          terraform init -input=false -reconfigure \
+            -backend-config="resource_group_name=$TF_STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$TF_STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=$TF_STATE_CONTAINER" \
+            -backend-config="key=resource-groups/${{ inputs.resource_group }}/terraform.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true" \
+            -backend-config="client_id=$ARM_CLIENT_ID" \
+            -backend-config="tenant_id=$ARM_TENANT_ID" \
+            -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
+      - name: Apply reviewed plan
+        run: terraform apply -input=false -auto-approve tfplan
