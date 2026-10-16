@@ -113,6 +113,7 @@ jobs:
           TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
           TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
           TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+          REQUESTED_RG: ${{ inputs.resource_group }}
         run: |
           set -euo pipefail
           for key in TF_STATE_RESOURCE_GROUP TF_STATE_STORAGE_ACCOUNT TF_STATE_CONTAINER ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID; do
@@ -126,7 +127,7 @@ jobs:
             -backend-config="resource_group_name=$TF_STATE_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_STATE_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_STATE_CONTAINER" \
-            -backend-config="key=resource-groups/${{ inputs.resource_group }}/terraform.tfstate" \
+            -backend-config="key=resource-groups/$REQUESTED_RG/terraform.tfstate" \
             -backend-config="use_oidc=true" \
             -backend-config="use_azuread_auth=true" \
             -backend-config="client_id=$ARM_CLIENT_ID" \
@@ -134,6 +135,8 @@ jobs:
             -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
       - name: Terraform plan
         shell: bash
+        env:
+          REQUESTED_RG: ${{ inputs.resource_group }}
         run: |
           set +e
           terraform plan -input=false -no-color -detailed-exitcode -out=tfplan -var-file=terraform.tfvars.json
@@ -142,7 +145,7 @@ jobs:
           if [[ "$code" -ne 0 && "$code" -ne 2 ]]; then exit "$code"; fi
           terraform show -no-color tfplan | tee "$RUNNER_TEMP/plan.txt"
           {
-            echo "Resource Group plan: ${{ inputs.resource_group }}"
+            echo "Resource Group plan: $REQUESTED_RG"
             cat "$RUNNER_TEMP/plan.txt"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
@@ -178,13 +181,14 @@ jobs:
           TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
           TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
           TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+          REQUESTED_RG: ${{ inputs.resource_group }}
         run: |
           set -euo pipefail
           terraform init -input=false -reconfigure \
             -backend-config="resource_group_name=$TF_STATE_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_STATE_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_STATE_CONTAINER" \
-            -backend-config="key=resource-groups/${{ inputs.resource_group }}/terraform.tfstate" \
+            -backend-config="key=resource-groups/$REQUESTED_RG/terraform.tfstate" \
             -backend-config="use_oidc=true" \
             -backend-config="use_azuread_auth=true" \
             -backend-config="client_id=$ARM_CLIENT_ID" \
