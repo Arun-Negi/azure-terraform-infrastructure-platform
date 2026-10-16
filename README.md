@@ -171,3 +171,7 @@ The `policies/azure-policy/` directory contains custom policy definitions for al
 - Pin GitHub Actions to immutable commit SHAs.
 - Test in a non-production subscription and inspect every plan; resource removals may destroy infrastructure.
 - Azure resources can incur charges. Confirm the subscription and plan before applying or destroying.
+
+## Resource Group–based configuration and independent deployments
+
+New per-Resource Group inputs are available under `resource-groups/<folder>/inputjson/`. The deployment workflow validates and plans one selected folder at a time and uses a folder-specific Azure Storage state key. Read [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) before using the workflow, especially the state-migration warning. The apply stage remains disabled until the operator explicitly enables it after migrating and verifying state.
