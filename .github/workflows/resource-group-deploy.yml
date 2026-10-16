@@ -70,6 +70,12 @@ jobs:
             [[ -n "$rg" ]] || continue
             python scripts/assemble_resource_group.py --input-dir "resource-groups/$rg/inputjson" --output "$RUNNER_TEMP/$rg.tfvars.json"
           done < "$RUNNER_TEMP/resource-groups.txt"
+      - name: Verify two independent sample configurations (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          python scripts/assemble_resource_group.py --input-dir resource-groups/rg-dev-network/inputjson --output "$RUNNER_TEMP/rg-dev-network.tfvars.json"
+          python scripts/assemble_resource_group.py --input-dir resource-groups/rg-dev-storage/inputjson --output "$RUNNER_TEMP/rg-dev-storage.tfvars.json"
       - name: Terraform format and static validation
         run: |
           terraform fmt -check -recursive
@@ -112,6 +118,7 @@ jobs:
           for key in TF_STATE_RESOURCE_GROUP TF_STATE_STORAGE_ACCOUNT TF_STATE_CONTAINER ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID; do
             [[ -n "${!key:-}" ]] || { echo "Required GitHub variable/secret $key is not configured"; exit 1; }
           done
+          jq -e --arg id "$ARM_SUBSCRIPTION_ID" '.subscription_id == $id' terraform.tfvars.json >/dev/null || { echo "Selected JSON subscription_id must match ARM_SUBSCRIPTION_ID"; exit 1; }
           cat > backend.generated.tf <<'EOF'
           terraform { backend "azurerm" {} }
           EOF
@@ -152,9 +159,6 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     environment: azure-apply
-    concurrency:
-      group: terraform-${{ inputs.resource_group }}
-      cancel-in-progress: false
     env:
       ARM_USE_OIDC: "true"
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
