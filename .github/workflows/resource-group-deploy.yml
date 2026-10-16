@@ -56,7 +56,10 @@ jobs:
             printf '%s\n' "$REQUESTED_RG" > "$RUNNER_TEMP/resource-groups.txt"
           else
             git fetch --no-tags origin "$BASE_SHA"
-            git diff --name-only "$BASE_SHA" HEAD | awk -F/ '$1=="resource-groups" && $2!="" {print $2}' | sort -u > "$RUNNER_TEMP/resource-groups.txt"
+            git diff --name-only "$BASE_SHA" HEAD | awk -F/ '$1=="resource-groups" && $2!="" {print $2}' | sort -u > "$RUNNER_TEMP/changed-resource-groups.txt"
+            while IFS= read -r rg; do
+              [[ -d "resource-groups/$rg/inputjson" ]] && printf '%s\\n' "$rg"
+            done < "$RUNNER_TEMP/changed-resource-groups.txt" > "$RUNNER_TEMP/resource-groups.txt"
             if [[ ! -s "$RUNNER_TEMP/resource-groups.txt" ]]; then
               mkdir -p resource-groups
               find resource-groups -mindepth 2 -maxdepth 2 -type d -name inputjson -printf '%h\n' | sed 's#^resource-groups/##' | sort -u > "$RUNNER_TEMP/resource-groups.txt"
