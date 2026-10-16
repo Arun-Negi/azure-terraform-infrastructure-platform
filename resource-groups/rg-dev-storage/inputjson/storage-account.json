@@ -1,0 +1,14 @@
+{
+  "storage_accounts": [
+    {
+      "instance": "logs001",
+      "resource_group_instance": "storage",
+      "account_tier": "Standard",
+      "replication_type": "LRS",
+      "min_tls_version": "TLS1_2",
+      "public_network_access_enabled": false,
+      "shared_access_key_enabled": false,
+      "tags": { "purpose": "diagnostics" }
+    }
+  ]
+}
