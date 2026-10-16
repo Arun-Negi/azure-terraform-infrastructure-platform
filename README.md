@@ -69,14 +69,19 @@ Storage accounts default to Standard/LRS, TLS 1.2, HTTPS-only traffic, infrastru
 
 ## VS Code JSON IntelliSense
 
-The repository includes `schemas/terraform-input.schema.json` and `.vscode/settings.json`. Open the repository folder in VS Code and edit `terraform.tfvars.json` for field descriptions and validation hints.
+**A developer-friendly JSON experience is built in.** The repository maps the input file to JSON Schema, so VS Code can suggest fields and allowed values while developers type, show descriptions on hover, and flag many invalid values before Terraform runs. No extra extension is required for basic JSON IntelliSense in VS Code.
 
-1. Open the repository folder in VS Code.
-2. Copy the example: `cp terraform.tfvars.json.example terraform.tfvars.json`.
-3. Edit the JSON; use the schema hints and hover descriptions.
-4. Run `terraform validate` and `terraform plan` before applying.
+The schema is split by service under `schemas/services/` and connected through `schemas/terraform-input.schema.json`. The workspace mapping in `.vscode/settings.json` enables this experience for both `terraform.tfvars.json` and `terraform.tfvars.json.example`.
 
-The schema catches common input mistakes, but Terraform and Azure remain authoritative for rules such as CIDR overlap, subnet containment, and name conflicts.
+1. Open the repository folder in VS Code (open the folder, not just the JSON file).
+2. Create your working input: `cp terraform.tfvars.json.example terraform.tfvars.json`.
+3. Inside a JSON object, press **Ctrl+Space** (macOS: **Control+Space**, or use **Option+Esc** if that shortcut is reserved by macOS) to see available property suggestions.
+4. Hover over a property to read its guidance; for enum-backed fields such as `env` and `replication_type`, use suggestions to choose an allowed value.
+5. Fix any schema diagnostics shown in the editor, then run `terraform validate` and review `terraform plan` before applying.
+
+When adding a new service, update its own schema and reference it from the top-level schema so the editor experience stays consistent. See [Developer Design Standard](docs/DESIGN-STANDARD.md).
+
+Schema validation catches common input mistakes, but Terraform and Azure remain authoritative for rules such as CIDR overlap, subnet containment, and name conflicts.
 
 ## Toolchain versions
 
