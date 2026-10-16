@@ -36,7 +36,13 @@ def validate_schema(name: str, data: dict, source: Path) -> None:
         raise ValueError("Install validation dependencies with: python -m pip install -r requirements-validation.txt") from exc
     schema_path = SCHEMAS / name
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    resolver = jsonschema.RefResolver(base_uri=schema_path.as_uri(), referrer=schema)
+    schema_store = {}
+    for local_schema_path in (ROOT / "schemas").rglob("*.json"):
+        local_schema = json.loads(local_schema_path.read_text(encoding="utf-8"))
+        schema_store[local_schema_path.as_uri()] = local_schema
+        if local_schema.get("$id"):
+            schema_store[local_schema["$id"]] = local_schema
+    resolver = jsonschema.RefResolver(base_uri=schema_path.as_uri(), referrer=schema, store=schema_store)
     validator = jsonschema.Draft202012Validator(schema, resolver=resolver, format_checker=jsonschema.FormatChecker())
     errors = sorted(validator.iter_errors(data), key=lambda e: list(map(str, e.path)))
     if errors:
