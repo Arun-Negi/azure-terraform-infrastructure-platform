@@ -1,8 +1,8 @@
 # Azure Terraform Infrastructure Platform
 
-Deploy Azure resource groups, optional virtual networks, subnets, and storage accounts by editing **one JSON file**. End users do not need to edit Terraform variables or HCL.
+Deploy infrastructure through Resource Group-scoped JSON inputs. Each independently managed Resource Group has its own folder under `resource-groups/<folder>/inputjson/`; reusable Terraform modules, naming rules, and service schemas remain centralized. See [Resource Group Configuration and Deployment](docs/RESOURCE-GROUP-DEPLOYMENT.md) for the current structure and isolated workflow.
 
-## Configure one JSON file
+## Legacy single-file input (backward-compatibility reference)
 
 Copy the example to the automatically loaded Terraform input filename:
 
